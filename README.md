@@ -3,7 +3,7 @@
 This project implements a parallel linear equation solver for large matrices, employing both serial and parallel LU Decomposition algorithms using Pthreads. It explores performance enhancement achieved through multicore execution strategies.
 
 ## Project Structure
-
+```bash
 Parallel Equation Solver
 │
 ├── src/                    # Source files
@@ -33,7 +33,7 @@ Parallel Equation Solver
 │
 ├── Makefile                # Makefile for building the project
 └── README.md               # Project overview and general instructions
-
+```
 ## Prerequisites
 
 * A C compiler (GCC, Clang, etc.)
