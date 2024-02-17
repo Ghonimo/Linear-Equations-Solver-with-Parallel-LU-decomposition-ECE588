@@ -42,12 +42,12 @@ Parallel Equation Solver
 ## Setup
 
 1. Clone the repository:
-   ```bash
+```bash
    git clone https://github.com/Ghonimo/ECE588_Parallel_Matrix
 ```
 
 2. Navigate to the project directory:
-   ```bash
+```bash
 cd ECE588_Parallel_Matrix
 ```
 
