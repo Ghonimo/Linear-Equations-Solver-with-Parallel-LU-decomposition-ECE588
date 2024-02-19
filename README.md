@@ -51,4 +51,6 @@ Parallel Equation Solver
 cd ECE588_Parallel_Matrix
 ```
 
+[Setup Instructions](docs/setup.md)
 
+[Usage Instructions](docs/usage.md)
