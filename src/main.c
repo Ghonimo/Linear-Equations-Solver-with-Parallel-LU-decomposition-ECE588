@@ -3,12 +3,12 @@
 // Created: 02/18/2024
 // Last Modified: 02/18/2024
 // Functionality: Perform LU decomposition and solve a system of linear equations using forward and backward substitution.
-// Version: 0.3 : readin the matrix from a file passed as an argument to the program
+// Version: 0.3 : read in the matrix from a file passed as an argument to the program
 //              : added a function to free the allocated memory
 //              : the matrix size is parameterized, and passed as the first line in the matrix file
 
-// Version: 0.4 : allow write the solution to a file passed as an argument to the program
-//              : if no file is passed, the solution will be printed to the standard output
+// Version: 0.4 : allow writing the solution to a file passed as an argument to the program
+//              : if no file is passed, the solution will be printed in the terminal
 //              : example usage: matrices/py_generated/5000x5000.txt matrices_solution/5000x5000.txt
 
 
