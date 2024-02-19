@@ -2,124 +2,151 @@
 // Created: 02/18/2024
 // Last Modified: 02/18/2024
 // Functionality: Perform LU decomposition and solve a system of linear equations using forward and backward substitution.
-// Version: 0.2 : readin the matrix from a file passed as an argument to the program
+// Version: 0.3 : readin the matrix from a file passed as an argument to the program
+//              : added a function to free the allocated memory
+//              : the matrix size is parameterized, and passed as the first line in the matrix file
 
-    // double A[N][N] = {{1, 1, -1}, {1, -2, 3}, {2, 3, 1}};
-    // double b[N] = {4, -6, 7};
 
 #include "../include/matrix.h"
 #include <stdio.h>
-#include <stdlib.h> // For exit() and EXIT_FAILURE
+#include <stdlib.h>
 
-#define N 3 // Size of the matrix (3x3)
-
-// Assume LU Decomposition, Forward Substitution, and Backward Substitution
-void readMatrixFromFile(const char* filename, double A[N][N], double b[N]) {
-    FILE* file = fopen(filename, "r");
-    if (file == NULL) {
-        perror("Error opening file");
-        exit(EXIT_FAILURE);
-    }
-
-    for (int i = 0; i < N; i++) {
-        for (int j = 0; j < N; j++) {
-            if (fscanf(file, "%lf", &A[i][j]) != 1) {
-                perror("Error reading matrix from file");
-                fclose(file);
-                exit(EXIT_FAILURE);
-            }
-        }
-    }
-
-    for (int i = 0; i < N; i++) {
-        if (fscanf(file, "%lf", &b[i]) != 1) {
-            perror("Error reading vector from file");
-            fclose(file);
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    fclose(file);
-}
-
-///////
-// Function to perform LU decomposition
-void luDecomposition(double A[N][N], double L[N][N], double U[N][N]) {
-    int i, j, k;
-    for (i = 0; i < N; i++) {
-        for (j = 0; j < N; j++) {
-            if (j < i)
-                L[j][i] = 0;
-            else {
-                L[j][i] = A[j][i];
-                for (k = 0; k < i; k++) {
-                    L[j][i] = L[j][i] - L[j][k] * U[k][i];
-                }
-            }
-        }
-        for (j = 0; j < N; j++) {
-            if (j < i)
-                U[i][j] = 0;
-            else if (j == i)
-                U[i][j] = 1;
-            else {
-                U[i][j] = A[i][j] / L[i][i];
-                for (k = 0; k < i; k++) {
-                    U[i][j] = U[i][j] - ((L[i][k] * U[k][j]) / L[i][i]);
-                }
-            }
-        }
-    }
-}
-
-// Function to solve the equation Ly = b
-void forwardSubstitution(double L[N][N], double b[N], double y[N]) {
-    for (int i = 0; i < N; i++) {
-        y[i] = b[i];
-        for (int j = 0; j < i; j++) {
-            y[i] -= L[i][j] * y[j];
-        }
-        y[i] = y[i] / L[i][i];
-    }
-}
-
-// Function to solve the equation Ux = y
-void backwardSubstitution(double U[N][N], double y[N], double x[N]) {
-    for (int i = N - 1; i >= 0; i--) {
-        x[i] = y[i];
-        for (int j = i + 1; j < N; j++) {
-            x[i] -= U[i][j] * x[j];
-        }
-        // No division by U[i][i] since U[i][i] = 1
-    }
-}
-
-//
-
+// Main Function
 int main(int argc, char* argv[]) {
     if (argc != 2) {
         printf("Usage: %s <matrix_file>\n", argv[0]);
         return EXIT_FAILURE;
     }
 
-    double A[N][N];
-    double b[N];
-    double L[N][N] = {0};
-    double U[N][N] = {0};
-    double y[N] = {0};
-    double x[N] = {0};
+    int n; // Matrix size
+    double **A, **L, **U, *b, *y, *x;
 
     // Read matrix A and vector b from file
-    readMatrixFromFile(argv[1], A, b);
+    readMatrixFromFile(argv[1], &A, &b, &n);
 
-    luDecomposition(A, L, U);
-    forwardSubstitution(L, b, y);
-    backwardSubstitution(U, y, x);
+    // Allocate memory for L, U, y, and x
+    L = (double**)malloc(n * sizeof(double*));
+    U = (double**)malloc(n * sizeof(double*));
+    y = (double*)malloc(n * sizeof(double));
+    x = (double*)malloc(n * sizeof(double));
+    for (int i = 0; i < n; i++) {
+        L[i] = (double*)malloc(n * sizeof(double));
+        U[i] = (double*)malloc(n * sizeof(double));
+    }
 
+    // Initialize L and U to zeros
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            L[i][j] = 0;
+            U[i][j] = 0;
+        }
+    }
+
+    // Perform LU decomposition and solve the system
+    luDecomposition(A, L, U, n);
+    forwardSubstitution(L, b, y, n);
+    backwardSubstitution(U, y, x, n);
+
+    // Print solution
     printf("Solution: \n");
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < n; i++) {
         printf("x[%d] = %f\n", i, x[i]);
     }
 
+    // Free allocated memory
+    freeMemory(A, L, U, b, y, x, n);
+
     return 0;
+}
+
+// Function to perform LU decomposition
+void luDecomposition(double** A, double** L, double** U, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int k = i; k < n; k++) {
+            // Summation of L(i, j) * U(j, k)
+            double sum = 0;
+            for (int j = 0; j < i; j++)
+                sum += (L[i][j] * U[j][k]);
+
+            // Evaluating U(i, k)
+            U[i][k] = A[i][k] - sum;
+        }
+
+        for (int k = i; k < n; k++) {
+            if (i == k)
+                L[i][i] = 1; // Diagonal as 1
+            else {
+                // Summation of L(k, j) * U(j, i)
+                double sum = 0;
+                for (int j = 0; j < i; j++)
+                    sum += (L[k][j] * U[j][i]);
+
+                // Evaluating L(k, i)
+                L[k][i] = (A[k][i] - sum) / U[i][i];
+            }
+        }
+    }
+}
+
+// Function to solve the equation Ly = b for y
+void forwardSubstitution(double** L, double* b, double* y, int n) {
+    for (int i = 0; i < n; i++) {
+        y[i] = b[i];
+        for (int k = 0; k < i; k++)
+            y[i] -= L[i][k] * y[k];
+        y[i] = y[i] / L[i][i];
+    }
+}
+
+// Function to solve the equation Ux = y for x
+void backwardSubstitution(double** U, double* y, double* x, int n) {
+    for (int i = n - 1; i >= 0; i--) {
+        x[i] = y[i];
+        for (int j = i + 1; j < n; j++) {
+            x[i] -= U[i][j] * x[j];
+        }
+        x[i] /= U[i][i];
+    }
+}
+
+
+// Function to read matrix from file
+void readMatrixFromFile(const char* filename, double*** A, double** b, int* n) {
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    fscanf(file, "%d", n); // Read the size of the matrix from the first line
+
+    *A = (double**)malloc(*n * sizeof(double*));
+    *b = (double*)malloc(*n * sizeof(double));
+    for (int i = 0; i < *n; i++) {
+        (*A)[i] = (double*)malloc(*n * sizeof(double));
+        for (int j = 0; j < *n; j++) {
+            fscanf(file, "%lf", &(*A)[i][j]);
+        }
+    }
+
+    for (int i = 0; i < *n; i++) {
+        fscanf(file, "%lf", &(*b)[i]);
+    }
+
+    fclose(file);
+}
+
+// Function to free dynamically allocated memory
+void freeMemory(double** A, double** L, double** U, double* b, double* y, double* x, int n) {
+    for (int i = 0; i < n; i++) {
+        free(A[i]);
+        free(L[i]);
+        free(U[i]);
+    }
+    free(A);
+    free(L);
+    free(U);
+    free(b);
+    free(y);
+    free(x);
 }
