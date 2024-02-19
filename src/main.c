@@ -7,6 +7,10 @@
 //              : added a function to free the allocated memory
 //              : the matrix size is parameterized, and passed as the first line in the matrix file
 
+// Version: 0.4 : allow write the solution to a file passed as an argument to the program
+//              : if no file is passed, the solution will be printed to the standard output
+//              : example usage: matrices/py_generated/5000x5000.txt matrices_solution/5000x5000.txt
+
 
 #include "../include/matrix.h"
 #include <stdio.h>
@@ -14,8 +18,8 @@
 
 // Main Function
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        printf("Usage: %s <matrix_file>\n", argv[0]);
+    if (argc < 2 || argc > 3) {
+        printf("Usage: %s <matrix_file> [output_file]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -48,10 +52,32 @@ int main(int argc, char* argv[]) {
     forwardSubstitution(L, b, y, n);
     backwardSubstitution(U, y, x, n);
 
-    // Print solution
-    printf("Solution: \n");
+    // // Print solution
+    // printf("Solution: \n");
+    // for (int i = 0; i < n; i++) {
+    //     printf("x[%d] = %f\n", i, x[i]);
+    // }
+
+    // Write solution to file if specified
+    FILE* outputFile;
+    if (argc == 3) {
+        outputFile = fopen(argv[2], "w");
+        if (outputFile == NULL) {
+            perror("Error opening output file");
+            return EXIT_FAILURE;
+        }
+    } else {
+        outputFile = stdout; // Use standard output if no file is specified
+    }
+
+    // Use outputFile instead of printf for output
+    fprintf(outputFile, "Solution: \n");
     for (int i = 0; i < n; i++) {
-        printf("x[%d] = %f\n", i, x[i]);
+        fprintf(outputFile, "x[%d] = %f\n", i, x[i]);
+    }
+
+    if (outputFile != stdout) {
+        fclose(outputFile);
     }
 
     // Free allocated memory
