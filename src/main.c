@@ -31,6 +31,9 @@ int main(int argc, char* argv[]) {
     int ret;
     int n; // Matrix size
     double **A, **L, **U, *b, *y, *x;
+    struct timespec start, end; // Timing variables
+
+    clock_gettime(CLOCK_REALTIME, &start); // Record start time
 
     // Read matrix A and vector b from file
     readMatrixFromFile(argv[1], &A, &b, &n);
@@ -72,12 +75,16 @@ int main(int argc, char* argv[]) {
     //     printf("x[%d] = %f\n", i, x[i]);
     // }
 
+    clock_gettime(CLOCK_REALTIME, &end); // Record end time
+    double time_taken = end.tv_sec - start.tv_sec + (end.tv_nsec - start.tv_nsec) / 1e9; // Calculate elapsed time in seconds
+
     // Write solution to file if specified
     FILE* outputFile;
     if (argc == 3) {
         outputFile = fopen(argv[2], "w");
         if (outputFile == NULL) {
             perror("Error opening output file");
+            freeMemory(A, L, U, b, y, x, n);
             return EXIT_FAILURE;
         }
     } else {
@@ -93,6 +100,12 @@ int main(int argc, char* argv[]) {
     unsigned long long int runtime = 1000000000 * (EndTime.tv_sec - StartTime.tv_sec) + EndTime.tv_nsec - StartTime.tv_nsec;
     printf("\nTime = %lld nanoseconds\t(%ld.%09ld sec)\n", runtime, runtime / 1000000000, runtime % 1000000000);
  
+    fprintf(outputFile, "Solution: \n");
+    for (int i = 0; i < n; i++) {
+        fprintf(outputFile, "x[%d] = %f\n", i, x[i]);
+    }
+    fprintf(outputFile, "\nTime taken: %.9f seconds\n", time_taken);
+    
     if (outputFile != stdout) {
         fclose(outputFile);
     }

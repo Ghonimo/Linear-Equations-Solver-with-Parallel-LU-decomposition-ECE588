@@ -43,7 +43,7 @@ Parallel Equation Solver
 
 1. Clone the repository:
 ```bash
-   git clone https://github.com/Ghonimo/ECE588_Parallel_Matrix
+   git clone git@github.com:Ghonim/ECE588_Parallel_Matrix.git
 ```
 
 2. Navigate to the project directory:
