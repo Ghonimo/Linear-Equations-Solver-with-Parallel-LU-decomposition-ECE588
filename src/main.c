@@ -15,7 +15,11 @@
 #include "../include/matrix.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h> // Include time.h for clock_gettime
+#include <time.h>
+#include <assert.h>
+
+struct timespec StartTime;
+struct timespec EndTime;
 
 // Main Function
 int main(int argc, char* argv[]) {
@@ -24,6 +28,7 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    int ret;
     int n; // Matrix size
     double **A, **L, **U, *b, *y, *x;
     struct timespec start, end; // Timing variables
@@ -51,11 +56,19 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Starting the clock
+    struct timespec StartTime, EndTime;
+    ret = clock_gettime(CLOCK_REALTIME, &StartTime);
+    assert(ret == 0);
+
     // Perform LU decomposition and solve the system
     luDecomposition(A, L, U, n);
     forwardSubstitution(L, b, y, n);
     backwardSubstitution(U, y, x, n);
 
+    // Ending Clock
+    ret = clock_gettime(CLOCK_REALTIME, &EndTime);
+    assert(ret == 0);
     // // Print solution
     // printf("Solution: \n");
     // for (int i = 0; i < n; i++) {
@@ -78,7 +91,7 @@ int main(int argc, char* argv[]) {
         outputFile = stdout; // Use standard output if no file is specified
     }
 
-    // Use outputFile instead of printf for output
+ 
     fprintf(outputFile, "Solution: \n");
     for (int i = 0; i < n; i++) {
         fprintf(outputFile, "x[%d] = %f\n", i, x[i]);
