@@ -85,10 +85,10 @@ int main(int argc, char* argv[]) {
     }
 
     // Use outputFile instead of printf for output
-    fprintf(outputFile, "Solution: \n");
-    for (int i = 0; i < n; i++) {
-        fprintf(outputFile, "x[%d] = %f\n", i, x[i]);
-    }
+    // fprintf(outputFile, "Solution: \n");
+    // for (int i = 0; i < n; i++) {
+    //     fprintf(outputFile, "x[%d] = %f\n", i, x[i]);
+    // }
     
     unsigned long long int runtime = 1000000000 * (EndTime.tv_sec - StartTime.tv_sec) + EndTime.tv_nsec - StartTime.tv_nsec;
     printf("\nTime = %lld nanoseconds\t(%ld.%09ld sec)\n", runtime, runtime / 1000000000, runtime % 1000000000);
