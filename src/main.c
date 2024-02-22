@@ -15,6 +15,11 @@
 #include "../include/matrix.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <assert.h>
+
+struct timespec StartTime;
+struct timespec EndTime;
 
 // Main Function
 int main(int argc, char* argv[]) {
@@ -23,6 +28,7 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    int ret;
     int n; // Matrix size
     double **A, **L, **U, *b, *y, *x;
 
@@ -47,11 +53,19 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Starting the clock
+    struct timespec StartTime, EndTime;
+    ret = clock_gettime(CLOCK_REALTIME, &StartTime);
+    assert(ret == 0);
+
     // Perform LU decomposition and solve the system
     luDecomposition(A, L, U, n);
     forwardSubstitution(L, b, y, n);
     backwardSubstitution(U, y, x, n);
 
+    // Ending Clock
+    ret = clock_gettime(CLOCK_REALTIME, &EndTime);
+    assert(ret == 0);
     // // Print solution
     // printf("Solution: \n");
     // for (int i = 0; i < n; i++) {
@@ -75,7 +89,10 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < n; i++) {
         fprintf(outputFile, "x[%d] = %f\n", i, x[i]);
     }
-
+    
+    unsigned long long int runtime = 1000000000 * (EndTime.tv_sec - StartTime.tv_sec) + EndTime.tv_nsec - StartTime.tv_nsec;
+    printf("\nTime = %lld nanoseconds\t(%ld.%09ld sec)\n", runtime, runtime / 1000000000, runtime % 1000000000);
+ 
     if (outputFile != stdout) {
         fclose(outputFile);
     }
