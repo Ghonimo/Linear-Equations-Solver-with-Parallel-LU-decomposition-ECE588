@@ -113,27 +113,33 @@ void* parallelLUDecomposition(void* args) {
     pthread_mutex_t *mutexes = data->mutexes;
     pthread_barrier_t *barrier = &data->barrier;
 
-    for (int i = startRow; i < endRow; i++) {
+     for (int i = startRow; i < endRow; i++) {
+        printf("Thread %d: Starting to work on row %d\n", data->threadId, i); // Add this line
         for (int k = i; k < n; k++) {
             double sum = 0;
             for (int j = 0; j < i; j++) {
                 sum += L[i][j] * U[j][k];
             }
-            pthread_mutex_lock(&mutexes[i]); 
+            pthread_mutex_lock(&mutexes[i]); // Acquire in row order 
+            printf("Thread %d: Acquired mutex %d\n", data->threadId, i);
             U[i][k] = A[i][k] - sum;
             pthread_mutex_unlock(&mutexes[i]); 
+            printf("Thread %d: Released mutex %d\n", data->threadId, i);
         }
 
         pthread_barrier_wait(barrier);
 
+        // Acquire mutexes in the same order for the L matrix calculation
         for (int k = i + 1; k < n; k++) { 
             double sum = 0;
             for (int j = 0; j < i; j++) {
                 sum += L[k][j] * U[j][i];
             }
-            pthread_mutex_lock(&mutexes[k]); 
+            pthread_mutex_lock(&mutexes[k]);  // Acquire in row order 
             L[k][i] = (A[k][i] - sum) / U[i][i];
             pthread_mutex_unlock(&mutexes[k]); 
+            printf("Thread %d: Finished updating L[%d][%d]\n", data->threadId, k, i); // Add this line
+
         }
     }
     return NULL;
