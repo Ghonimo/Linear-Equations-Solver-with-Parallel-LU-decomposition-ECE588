@@ -4,17 +4,16 @@
 #include <assert.h>
 #include <pthread.h>
 
-#include <math.h>
-
 typedef struct {
     int threadId;
     int startRow;
     int endRow;
     double **A, **L, **U;
     int n;
-    pthread_mutex_t *mutexes; 
-    pthread_barrier_t *barrier;
+    pthread_mutex_t *mutexes; // Add a pointer for the mutex array
+    pthread_barrier_t barrier; 
 } ThreadData;
+
 void* parallelLUDecomposition(void* arg);
 
 struct timespec StartTime;
@@ -49,10 +48,6 @@ void forwardSubstitution(double** L, double* b, double* y, int n) {
         y[i] = b[i];
         for (int k = 0; k < i; k++)
             y[i] -= L[i][k] * y[k];
-
-        if (fabs(L[i][i]) < 1e-10) { 
-        printf("WARNING: L[%d][%d] is very small: %f. Potential division by zero.\n", i, i, L[i][i]); }
-
         y[i] = y[i] / L[i][i];
     }
 }
@@ -64,10 +59,6 @@ void backwardSubstitution(double** U, double* y, double* x, int n) {
         for (int j = i + 1; j < n; j++) {
             x[i] -= U[i][j] * x[j];
         }
-
-        if (fabs(U[i][i]) < 1e-10) { 
-        printf("WARNING: U[%d][%d] is very small: %f. Potential division by zero.\n", i, i, U[i][i]); }
-
         x[i] /= U[i][i];
     }
 }
@@ -113,62 +104,63 @@ void freeMemory(double** A, double** L, double** U, double* b, double* y, double
     free(x);
 }
 
-// Function for parallel LU decomposition
 void* parallelLUDecomposition(void* args) {
     ThreadData* data = (ThreadData*)args;
     double **A = data->A, **L = data->L, **U = data->U;
     int n = data->n;
     int startRow = data->startRow, endRow = data->endRow;
-    pthread_mutex_t *mutexes = data->mutexes;
-    // Initialize a single shared barrier
+    //pthread_mutex_t *mutexes = data->mutexes; 
+    pthread_barrier_t *barrier = &data->barrier;
 
-    //pthread_barrier_t *barrier = &data->barrier;
+    for (int i = startRow; i < endRow; i++) {
+        printf("Thread %d: Starting to work on row %d of U\n", data->threadId, i);
 
-     for (int i = startRow; i < endRow; i++) {
-        printf("Thread %d: Starting to work on row %d\n", data->threadId, i); 
+        // Precalculate sums
+        double rowSums[n];
         for (int k = i; k < n; k++) {
             double sum = 0;
             for (int j = 0; j < i; j++) {
                 sum += L[i][j] * U[j][k];
             }
-            pthread_mutex_lock(&mutexes[i]); // Acquire in row order 
-            printf("Thread %d: Acquired mutex %d\n", data->threadId, i);
-            U[i][k] = A[i][k] - sum;
-            pthread_mutex_unlock(&mutexes[i]); 
-            printf("Thread %d: Released mutex %d\n", data->threadId, i);
-            //
-            if (pthread_barrier_wait(data->barrier) != 0 && pthread_barrier_wait(data->barrier) != PTHREAD_BARRIER_SERIAL_THREAD) {  
-                perror("pthread_barrier_wait failed"); 
-                return NULL;  // Exit thread on error
-            } else {
-                printf("Thread %d: Passed the barrier\n", data->threadId);
-            }
-
+            rowSums[k] = sum;
         }
-        printf("about to wait for barrier wait %d\n", data->threadId);
-        pthread_barrier_wait(data->barrier);
-        printf("exit barrier wait %d\n", data->threadId);
 
-        // Acquire mutexes in the same order for the L matrix calculation
-        for (int k = i + 1; k < n; k++) { 
-            double sum = 0;
+        // Calculate U elements in parallel
+        for (int k = i; k < n; k++) {
+            double sum = 0; 
             for (int j = 0; j < i; j++) {
-                sum += L[k][j] * U[j][i];
+                sum += L[i][j] * U[j][k];
             }
-            pthread_mutex_lock(&mutexes[k]);  // Acquire in row order 
-
-            if (fabs(U[i][i]) < 1e-10) { // Check if diagonal element is very close to zero
-            printf("WARNING: U[%d][%d] is very small: %f. Potential division by zero.\n", i, i, U[i][i]); }
-
-            L[k][i] = (A[k][i] - sum) / U[i][i];
-            pthread_mutex_unlock(&mutexes[k]); 
-            printf("Thread %d: Finished updating L[%d][%d]\n", data->threadId, k, i); // Add this line
-
+            pthread_mutex_lock(&data->mutexes[i]); // Access mutexes through data->mutexes
+            printf("Thread %d: Acquired mutex %d (U update)\n", data->threadId, i);
+            printf("Thread %d: Calculating U[%d][%d], relevant values of L and U: ... \n", data->threadId, i, k); // Add debugging output here
+            U[i][k] = A[i][k] - sum;
+            pthread_mutex_unlock(&data->mutexes[i]); // Access mutexes through data->mutexes
+            printf("Thread %d: Released mutex %d (U update)\n", data->threadId, i);
         }
+
+        printf("Thread %d: Finished updating row %d of U\n", data->threadId, i);
+        pthread_barrier_wait(barrier);
+        printf("Thread %d: Passed the barrier\n", data->threadId, i);
+
+        // Calculate L elements 
+        for (int k = i + 1; k < n; k++) { 
+            double sum = 0; 
+            for (int j = 0; j < i; j++) { 
+                sum += L[k][j] * U[j][i];
+            } 
+            pthread_mutex_lock(&data->mutexes[k]); // Use data->mutexes
+            printf("Thread %d: Acquired mutex %d (L update)\n", data->threadId, k);
+            L[k][i] = (A[k][i] - sum) / U[i][i];
+            pthread_mutex_unlock(&data->mutexes[k]); // Use data->mutexes
+            printf("Thread %d: Released mutex %d (L update)\n", data->threadId, k);
+        }
+
+        printf("Thread %d: Finished updating row %d of L\n", data->threadId, i);
     }
-    printf("Thread %d: Finished execution.\n", data->threadId);
     return NULL;
 }
+
 
 // Main Function
 int main(int argc, char* argv[]) {
@@ -184,10 +176,8 @@ int main(int argc, char* argv[]) {
 
     clock_gettime(CLOCK_REALTIME, &start); 
 
-    // Read matrix A and vector b from file
     readMatrixFromFile(argv[1], &A, &b, &n);
 
-    // Allocate memory for L, U, y, and x
     L = (double**)malloc(n * sizeof(double*));
     U = (double**)malloc(n * sizeof(double*));
     y = (double*)malloc(n * sizeof(double));
@@ -197,7 +187,6 @@ int main(int argc, char* argv[]) {
         U[i] = (double*)malloc(n * sizeof(double));
     }
 
-    // Initialize L and U to zeros
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             L[i][j] = 0;
@@ -205,25 +194,23 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Starting the clock
     ret = clock_gettime(CLOCK_REALTIME, &StartTime);
     assert(ret == 0);
 
-    // Parallel LU Decomposition 
-    int numThreads = 1; 
+    int numThreads = 4; 
     pthread_t threads[numThreads];
     ThreadData threadData[numThreads];
 
-    // Initialize mutexes
-    pthread_mutex_t mutexes[n];
-    for (int i = 0; i < n; i++) {
-        pthread_mutex_init(&mutexes[i], NULL);
+    pthread_mutex_t **threadMutexes = malloc(numThreads * sizeof(pthread_mutex_t*));
+    for (int i = 0; i < numThreads; i++) {
+        threadMutexes[i] = malloc(n * sizeof(pthread_mutex_t));
+        for (int j = 0; j < n; j++) {
+            pthread_mutex_init(&threadMutexes[i][j], NULL);
+        }
     }
 
-    // Initialize barrier
-    pthread_barrier_t barrier; // Declare the shared barrier
-    pthread_barrier_init(&barrier, NULL, numThreads); 
-    
+    pthread_barrier_init(&threadData[0].barrier, NULL, numThreads);
+
     int rowsPerThread = n / numThreads;
     for (int i = 0; i < numThreads; i++) {
         threadData[i].threadId = i;
@@ -233,41 +220,36 @@ int main(int argc, char* argv[]) {
         threadData[i].L = L;
         threadData[i].U = U;
         threadData[i].n = n;
-        threadData[i].mutexes = mutexes; 
-        threadData[i].barrier = &barrier; // Pass the address of the shared barrier 
-
+        threadData[i].mutexes = threadMutexes[i]; 
 
         if (i == numThreads - 1) {
-            threadData[i].endRow = n; // Ensure the last thread covers remaining rows
+            threadData[i].endRow = n; 
         }
 
         pthread_create(&threads[i], NULL, parallelLUDecomposition, &threadData[i]);
     }
 
-    // Wait for all threads to finish
     for (int i = 0; i < numThreads; i++) { 
         pthread_join(threads[i], NULL);
     }
 
-    // Destroy mutexes and barrier
-    for (int i = 0; i < n; i++) {
-        pthread_mutex_destroy(&mutexes[i]);
+    for (int i = 0; i < numThreads; i++) {
+        for (int j = 0; j < n; j++) {
+            threadData[i].mutexes = threadMutexes[i]; // Assign the mutex array 
+        }
+        free(threadMutexes[i]);
     }
-    pthread_barrier_destroy(threadData[0].barrier); // Pass the barrier pointer directly
+    free(threadMutexes); 
 
-
-    // Perform forward and backward substitution sequentially
     forwardSubstitution(L, b, y, n);
     backwardSubstitution(U, y, x, n);
 
-    // Ending Clock
     ret = clock_gettime(CLOCK_REALTIME, &EndTime);
     assert(ret == 0);
 
-    clock_gettime(CLOCK_REALTIME, &end); // Record end time
+    clock_gettime(CLOCK_REALTIME, &end); 
     double time_taken = end.tv_sec - start.tv_sec + (end.tv_nsec - start.tv_nsec) / 1e9;
 
-    // Write solution to file if specified
     FILE* outputFile;
     if (argc == 3) {
         outputFile = fopen(argv[2], "w");
@@ -277,7 +259,7 @@ int main(int argc, char* argv[]) {
             return EXIT_FAILURE;
         }
     } else {
-        outputFile = stdout; // Use standard output if no file is specified
+        outputFile = stdout; 
     }
 
     fprintf(outputFile, "Solution: \n");
@@ -290,7 +272,6 @@ int main(int argc, char* argv[]) {
         fclose(outputFile);
     }
 
-    // Free allocated memory
     freeMemory(A, L, U, b, y, x, n);
 
     return 0;

@@ -6,6 +6,8 @@
 #include <assert.h>
 #include <pthread.h>
 
+#include <math.h>
+
 typedef struct {
     int threadId;
     int startRow;
@@ -60,7 +62,7 @@ int main(int argc, char* argv[]) {
     assert(ret == 0);
 
 /////// Parallel LU Decomposition -----------------------------------
-    int numThreads = 4; // Or any other way to determine the number of threads
+    int numThreads = 1; // Or any other way to determine the number of threads
     pthread_t threads[numThreads];
     ThreadData threadData[numThreads];
 
@@ -230,22 +232,40 @@ void* parallelLUDecomposition(void* args) {
     double **A = data->A, **L = data->L, **U = data->U;
     int n = data->n;
     int startRow = data->startRow, endRow = data->endRow;
+    printf("Thread %d: Starting LU decomposition from row %d to %d\n", data->threadId, startRow, endRow - 1);
 
     for (int i = startRow; i < endRow; i++) {
+        printf("Thread %d: Computing U matrix for row %d\n", data->threadId, i);
         for (int j = i; j < n; j++) {
             double sum = 0;
             for (int k = 0; k < i; k++) {
                 sum += L[i][k] * U[k][j];
             }
             U[i][j] = A[i][j] - sum;
+            printf("U[%d][%d] = %f\n", i, j, U[i][j]);
+
         }
+        // Ensuring L[i][i] = 1 for the diagonal of L
+        L[i][i] = 1.0; // This line ensures the diagonal of L is set to 1.
+        printf("L[%d][%d] set to 1 (diagonal)\n", i, i);
+
+        printf("Thread %d: Computing L matrix for column %d\n", data->threadId, i);
+
         for (int j = i + 1; j < n; j++) {
             double sum = 0;
             for (int k = 0; k < i; k++) {
                 sum += L[j][k] * U[k][i];
             }
+
+                if(U[i][i] == 0) { // Check to avoid division by zero
+                printf("Error: Division by zero detected at U[%d][%d]. U[%d][%d] = %f\n", i, i, i, i, U[i][i]);
+                return NULL; // Early exit to avoid division by zero 
+            }
             L[j][i] = (A[j][i] - sum) / U[i][i];
+            printf("L[%d][%d] = %f\n", j, i, L[j][i]);
+
         }
     }
+    printf("Thread %d: Finished LU decomposition\n", data->threadId);
     return NULL;
 }

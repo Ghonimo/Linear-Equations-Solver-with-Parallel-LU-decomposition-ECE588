@@ -52,6 +52,8 @@ void Barrier()
 // Function to perform LU decomposition
 // void luDecomposition_p(double** A, double** L, double** U, int start_row, int end_row, int start_col, int end_col) {
 void luDecomposition_p(int start_row, int end_row, int start_col, int end_col) {
+        printf("DEBUG: luDecomposition_p entered with start_row=%d, end_row=%d, start_col=%d, end_col=%d\n", start_row, end_row, start_col, end_col);
+
     for (int i = start_row; i < end_row; i++) {
         for (int k = i; k < end_col; k++) {
             // Summation of L(i, j) * U(j, k)
@@ -61,6 +63,7 @@ void luDecomposition_p(int start_row, int end_row, int start_col, int end_col) {
 
             // Evaluating U(i, k)
             U[i][k] = A[i][k] - sum;
+            printf("DEBUG: Inside outer loop, i=%d, k=%d\n", i, k);
         }
 
         for (int k = i; k < end_col; k++) {
@@ -74,9 +77,13 @@ void luDecomposition_p(int start_row, int end_row, int start_col, int end_col) {
 
                 // Evaluating L(k, i)
                 L[k][i] = (A[k][i] - sum) / U[i][i];
+                printf("DEBUG: Inside inner loop, i=%d, k=%d\n", i, k);
+
             }
         }
     }
+    printf("DEBUG: luDecomposition_p exiting\n"); 
+
 }
 
 void* thread_task(void* arg) {
