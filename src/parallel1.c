@@ -1,5 +1,5 @@
 
-#include "../include/matrix.h"
+//#include "../include/matrix.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -16,8 +16,37 @@ typedef struct {
     int n;
 } ThreadData;
 
-void* parallelLUDecomposition(void* arg);
+int numThreads = 10; // Or any other way to determine the number of threads
 
+/// Barrier stuff
+pthread_mutex_t SyncLock;
+pthread_cond_t SyncCV;
+int SyncCount;
+
+void Barrier() {
+    pthread_mutex_lock(&SyncLock);
+    SyncCount++;
+    if (SyncCount == numThreads) {
+        pthread_cond_broadcast(&SyncCV);
+        SyncCount = 0;
+    } else {
+        pthread_cond_wait(&SyncCV, &SyncLock);
+    }
+    pthread_mutex_unlock(&SyncLock);
+}
+
+void* parallelLUDecomposition(void* arg);
+void printMatrix(double **matrix, int n);
+void multiplyMatrices(double **m1, double **m2, double **res, int n);
+
+/// moved from matrix.h temporarily
+// Function Prototypes
+void luDecomposition(double** A, double** L, double** U, int n);
+void forwardSubstitution(double** L, double* b, double* y, int n);
+void backwardSubstitution(double** U, double* y, double* x, int n);
+void readMatrixFromFile(const char* filename, double*** A, double** b, int* n);
+void freeMemory(double** A, double** L, double** U, double* b, double* y, double* x, int n);
+/// 
 struct timespec StartTime;
 struct timespec EndTime;
 
@@ -60,9 +89,9 @@ int main(int argc, char* argv[]) {
     struct timespec StartTime, EndTime;
     ret = clock_gettime(CLOCK_REALTIME, &StartTime);
     assert(ret == 0);
+    printMatrix(A, n);
 
 /////// Parallel LU Decomposition -----------------------------------
-    int numThreads = 1; // Or any other way to determine the number of threads
     pthread_t threads[numThreads];
     ThreadData threadData[numThreads];
 
@@ -86,6 +115,8 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < numThreads; ++i) {
         pthread_join(threads[i], NULL);
     }
+    printMatrix(L, n);
+    printMatrix(U, n);
 /////// Parallel LU Decomposition -----------------------------------
 
     forwardSubstitution(L, b, y, n);
@@ -245,7 +276,7 @@ void* parallelLUDecomposition(void* args) {
             printf("U[%d][%d] = %f\n", i, j, U[i][j]);
 
         }
-        // Ensuring L[i][i] = 1 for the diagonal of L
+
         L[i][i] = 1.0; // This line ensures the diagonal of L is set to 1.
         printf("L[%d][%d] set to 1 (diagonal)\n", i, i);
 
@@ -254,6 +285,7 @@ void* parallelLUDecomposition(void* args) {
         for (int j = i + 1; j < n; j++) {
             double sum = 0;
             for (int k = 0; k < i; k++) {
+                Barrier();
                 sum += L[j][k] * U[k][i];
             }
 
@@ -261,6 +293,7 @@ void* parallelLUDecomposition(void* args) {
                 printf("Error: Division by zero detected at U[%d][%d]. U[%d][%d] = %f\n", i, i, i, i, U[i][i]);
                 return NULL; // Early exit to avoid division by zero 
             }
+            Barrier();
             L[j][i] = (A[j][i] - sum) / U[i][i];
             printf("L[%d][%d] = %f\n", j, i, L[j][i]);
 
@@ -268,4 +301,27 @@ void* parallelLUDecomposition(void* args) {
     }
     printf("Thread %d: Finished LU decomposition\n", data->threadId);
     return NULL;
+    Barrier();
+}
+
+
+void printMatrix(double **matrix, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            printf("%f ", matrix[i][j]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+void multiplyMatrices(double **m1, double **m2, double **res, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            res[i][j] = 0;
+            for (int k = 0; k < n; k++) {
+                res[i][j] += m1[i][k] * m2[k][j];
+            }
+        }
+    }
 }
