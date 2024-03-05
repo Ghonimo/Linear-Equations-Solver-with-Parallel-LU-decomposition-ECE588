@@ -16,7 +16,7 @@ typedef struct {
     int n;
 } ThreadData;
 
-int numThreads = 1; // Or any other way to determine the number of threads
+int numThreads = 3; // Or any other way to determine the number of threads
 
 /// Barrier stuff
 pthread_mutex_t SyncLock;
