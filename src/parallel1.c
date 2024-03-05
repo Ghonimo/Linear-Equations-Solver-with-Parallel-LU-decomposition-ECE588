@@ -16,7 +16,7 @@ typedef struct {
     int n;
 } ThreadData;
 
-int numThreads = 10; // Or any other way to determine the number of threads
+int numThreads = 1; // Or any other way to determine the number of threads
 
 /// Barrier stuff
 pthread_mutex_t SyncLock;
@@ -279,31 +279,27 @@ void* parallelLUDecomposition(void* args) {
 
         L[i][i] = 1.0; // This line ensures the diagonal of L is set to 1.
         printf("L[%d][%d] set to 1 (diagonal)\n", i, i);
-
         printf("Thread %d: Computing L matrix for column %d\n", data->threadId, i);
-
+        Barrier();
         for (int j = i + 1; j < n; j++) {
             double sum = 0;
             for (int k = 0; k < i; k++) {
-                Barrier();
                 sum += L[j][k] * U[k][i];
             }
-
                 if(U[i][i] == 0) { // Check to avoid division by zero
                 printf("Error: Division by zero detected at U[%d][%d]. U[%d][%d] = %f\n", i, i, i, i, U[i][i]);
                 return NULL; // Early exit to avoid division by zero 
             }
-            Barrier();
             L[j][i] = (A[j][i] - sum) / U[i][i];
+            Barrier();
             printf("L[%d][%d] = %f\n", j, i, L[j][i]);
 
         }
     }
     printf("Thread %d: Finished LU decomposition\n", data->threadId);
     return NULL;
-    Barrier();
+    //Barrier();
 }
-
 
 void printMatrix(double **matrix, int n) {
     for (int i = 0; i < n; i++) {
