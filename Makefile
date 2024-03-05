@@ -1,26 +1,54 @@
-
+###########################################################
+#
+#	Makefile for ECE 588 Final Project - Winter '24
+#
+#	Comments: compile commands for parallel2.c are
+#	commented out because it throws warning and 
+#	prematurely exits without executing the remaining
+#	commands
+#
+###########################################################
 
 all:
-	gcc -Wall src/main.c -o bin/serial_solver
-	gcc -Wall src/main_parallel.c -o bin/parallel_solver
-	gcc -Wall src/parallel1.c -o bin/parallel1
-	gcc -Wall src/parallel2.c -o bin/parallel2
-	gcc -Wall src/parallel3.c -o bin/parallel3
+	cc -Wall -lpthread src/main.c -o bin/serial_solver
+	cc -Wall -lpthread src/main_parallel.c -o bin/parallel_solver
+	cc -Wall -lpthread src/parallel1.c -o bin/parallel1
+	#cc -Wall -lpthread src/parallel2.c -o bin/parallel2
+	cc -Wall -lpthread src/parallel3.c -o bin/parallel3
+	cc -Wall -lpthread src/paralex.c -o bin/paralex
+
+thread:
+	cc -Wall -lpthread -fsanitize=thread src/main_parallel.c -o bin/parallel_solver
+	cc -Wall -lpthread -fsanitize=thread src/parallel1.c -o bin/parallel1
+	#cc -Wall -lpthread -fsanitize=thread src/parallel2.c -o bin/parallel2
+	cc -Wall -lpthread -fsanitize=thread src/parallel3.c -o bin/parallel3
+	cc -Wall -lpthread -fsanitize=thread src/paralex.c -o bin/paralex
+
+address:
+	cc -Wall -lpthread -fsanitize=address src/main_parallel.c -o bin/parallel_solver
+	cc -Wall -lpthread -fsanitize=address src/parallel1.c -o bin/parallel1
+	#cc -Wall -lpthread -fsanitize=address src/parallel2.c -o bin/parallel2
+	cc -Wall -lpthread -fsanitize=address src/parallel3.c -o bin/parallel3
+	cc -Wall -lpthread -fsanitize=address src/paralex.c -o bin/paralex
 
 parallel:
-	gcc -Wall src/main_parallel.c -o bin/parallel_solver
+	cc -Wall -lpthread src/main_parallel.c -o bin/parallel_solver
 
 p1:
-	gcc -Wall src/parallel1.c -o bin/parallel1
+	cc -Wall -lpthread src/parallel1.c -o bin/parallel1
 
 p2:
-	gcc -Wall src/parallel2.c -o bin/parallel2
+	cc -Wall -lpthread src/parallel2.c -o bin/parallel2
 
 p3:
-	gcc -Wall src/parallel3.c -o bin/parallel3
+	cc -Wall -lpthread src/parallel3.c -o bin/parallel3
+
+alex:
+	cc -Wall -lpthread src/paralex.c -o bin/paralex
 
 serial:
-	gcc -Wall src/main.c -o bin/serial_solver
+	cc -Wall src/main.c -o bin/serial_solver
 
 clean:
-	rm bin/*
+	rm -r bin/
+	mkdir bin
