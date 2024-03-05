@@ -2,10 +2,12 @@
 #
 #	Makefile for ECE 588 Final Project - Winter '24
 #
-#	Comments: compile commands for parallel2.c are
+#	Comments: Compile commands for parallel2.c are
 #	commented out because it throws warning and 
-#	prematurely exits without executing the remaining
-#	commands
+#	prematurely exits. 'make clean' creates 
+#	placeholder.md, an empty file that ensure the
+#	empty directory bin/ does not disappear
+#	
 #
 ###########################################################
 
@@ -52,3 +54,4 @@ serial:
 clean:
 	rm -r bin/
 	mkdir bin
+	touch bin/placeholder.md
