@@ -91,14 +91,14 @@ void* parallel_portion(void* thread_data) {
     int id = my_data->id;
     int k = my_data->k;
 
-    printf("Thread %d: Computing step k: %d\n", id, k);
+    //printf("Thread %d: Computing step k: %d\n", id, k);
     int interation_per_thread = n - 1 - k;
     int start = (k + 1) + id * interation_per_thread / numThreads;
     int end = (k + 1) + (id + 1) * interation_per_thread / numThreads < n ? (k + 1) + (id + 1) * interation_per_thread / numThreads : n;
     for (int i = start; i < end; i++) {
         for (int j = k + 1; j < n; j++) {
             a[i][j] -= l[i][k] * u[k][j];
-            printf("Thread %d: A[%d][%d] = %f\n", id, i, j, a[i][j]);
+           // printf("Thread %d: A[%d][%d] = %f\n", id, i, j, a[i][j]);
         }
     }
     pthread_exit(NULL); 
@@ -196,6 +196,7 @@ int main(int argc, char *argv[]) {
         printf("Usage: %s <file path> <number of numThreads>\n", argv[0]);
         return 1;
     }
+    clock_gettime(CLOCK_REALTIME, &start); // Record start time
 
     // Read matrix from file
     readMatrixFromFile(argv[1]);
@@ -250,7 +251,6 @@ int main(int argc, char *argv[]) {
             u[k][i] = a[k][i];
         }
 
-    clock_gettime(CLOCK_REALTIME, &start); // Record start time
         for (int i = 0; i < numThreads; i++) {
             thread_data_array[i].id = i;
             thread_data_array[i].k = k;
@@ -268,16 +268,16 @@ int main(int argc, char *argv[]) {
         permutation_matrix[i][p[i]] = 1.0;
     }
     // Printing results
-    printf("Original matrix:\n");
-    print(a_duplicate, n);
-    printf("L matrix:\n");
-    print(l, n);
-    printf("U matrix:\n");
-    print(u, n);
-    printf("P array:\n");
-    for (int i = 0; i < n; ++i) {
-        printf("%d ", p[i]);
-    }
+    // printf("Original matrix:\n");
+    // print(a_duplicate, n);
+    // printf("L matrix:\n");
+    // print(l, n);
+    // printf("U matrix:\n");
+    // print(u, n);
+    // printf("P array:\n");
+    // for (int i = 0; i < n; ++i) {
+    //     printf("%d ", p[i]);
+    // }
 
    // the multiplication function was used to verify the correctness of the LU decomposition
    // matrix_multiply(permutation_matrix, a_duplicate, PA, n);
@@ -293,10 +293,10 @@ int main(int argc, char *argv[]) {
     backwardSubstitution(u, y, x, n);
 
     // Print the solution vector x
-    printf("Solution vector x:\n");
-    for (int i = 0; i < n; i++) {
-        printf("x[%d] = %f\n", i, x[i]);
-    }
+    // printf("Solution vector x:\n");
+    // for (int i = 0; i < n; i++) {
+    //     printf("x[%d] = %f\n", i, x[i]);
+    // }
 
     fprintf(stdout, "\nTime taken: %.9f seconds\n", time_taken);
 
