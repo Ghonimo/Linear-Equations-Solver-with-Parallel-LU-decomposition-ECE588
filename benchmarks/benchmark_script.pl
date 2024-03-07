@@ -6,7 +6,8 @@ use warnings;
 # Output file path
 #my $output_file = 'benchmarks/1000x1000_mac.txt';
 #my $output_file = 'benchmarks/2000x2000_mac.txt';
-my $output_file = 'benchmarks/5000x5000_mac.txt';
+#my $output_file = 'benchmarks/5000x5000_mac.txt';
+my $output_file = 'benchmarks/5000x5000_linux.txt';
 
 # Open the file for writing
 open(my $fh, '>', $output_file) or die "Could not open file '$output_file' $!";
