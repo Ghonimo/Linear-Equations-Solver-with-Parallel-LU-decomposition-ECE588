@@ -1,10 +1,24 @@
+##############################################################
+#
+#   ECE 588 Final Project PSU Winter 2024
+#
+#   Python script to automate graphing of the speedup data 
+#   from benchmark tests.  Parses speedup data from textfile
+#   and graphs against number of processors
+#
+#
+#   Alexander Maso 
+#
+##############################################################
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
 def read_data(file_path):
     data = np.loadtxt(file_path, skiprows=1)  # Assuming the first row is header
-    return data[:, 0], data[:, 2]  # Return number of threads and speedup
+    return data[:, 0], data[:, 2]  # Parse number of threads and speedup
 
 def plot_data(threads, speedup, title='Processor Speedup'):
     plt.figure(figsize=(10, 6))
