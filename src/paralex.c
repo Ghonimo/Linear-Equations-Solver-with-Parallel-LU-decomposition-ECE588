@@ -63,6 +63,9 @@ void freeMemory(double** A, double** L, double** U, double* b, double* y, double
 struct timespec StartTime;
 struct timespec EndTime;
 
+//TODO: Adding a new mutex to hopefully only allow a single thread to update the shared matrices at once
+// pthread_mutex_t matrix_mutex;
+
 // Main Function
 int main(int argc, char* argv[]) {
     if (argc < 2 || argc > 3) {
@@ -114,6 +117,13 @@ int main(int argc, char* argv[]) {
 /////// Parallel LU Decomposition -----------------------------------
     pthread_t threads[numThreads];
     ThreadData threadData[numThreads];
+
+//FIXME: THIS IS WHERE I THINK ONE OF THE BUGS IS
+//       The distribution of rows among the threads
+//       is uneven and causing a bug where threads
+//       get assigned rows from _ to -1 which causes
+//       the threads to be terminated and the entire
+//       decomposition is done by a single thread
 
     int rowsPerThread = n / numThreads;
     for (int i = 0; i < numThreads; ++i) {
