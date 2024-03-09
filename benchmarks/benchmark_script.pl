@@ -20,7 +20,7 @@ printf $fh "%-20s %-15s %-15s\n", "Number of Threads", "Time (Seconds)", "Speedu
 my $single_thread_time;
 
 # Run the program with different numbers of threads (1 to 16)
-for (my $num_threads = 1; $num_threads <= 32; $num_threads++) {
+for (my $num_threads = 1; $num_threads <= 16; $num_threads++) {
 
     my $output = `./bin/parallel_solver matrices/py_generated/6000x6000.txt $num_threads`; 
 
