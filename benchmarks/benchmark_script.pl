@@ -7,7 +7,8 @@ use warnings;
 #my $output_file = 'benchmarks/1000x1000_mac.txt';
 #my $output_file = 'benchmarks/2000x2000_mac.txt';
 #my $output_file = 'benchmarks/5000x5000_mac.txt';
-my $output_file = 'benchmarks/5000x5000_linux_32.txt';
+#my $output_file = 'benchmarks/5000x5000_linux_32.txt';
+my $output_file = 'benchmarks/10000x10000_mac.txt';
 
 # Open the file for writing
 open(my $fh, '>', $output_file) or die "Could not open file '$output_file' $!";
@@ -19,9 +20,9 @@ printf $fh "%-20s %-15s %-15s\n", "Number of Threads", "Time (Seconds)", "Speedu
 my $single_thread_time;
 
 # Run the program with different numbers of threads (1 to 16)
-for (my $num_threads = 1; $num_threads <= 32; $num_threads++) {
+for (my $num_threads = 1; $num_threads <= 16; $num_threads++) {
 
-    my $output = `./bin/parallel_algorithm matrices/py_generated/5000x5000.txt $num_threads`; 
+    my $output = `./bin/parallel_solver matrices/py_generated/10000x10000.txt $num_threads`; 
 
     # Extract the time from the output.
     my ($time_in_seconds) = $output =~ /Time taken: ([\d\.]+) seconds/;
