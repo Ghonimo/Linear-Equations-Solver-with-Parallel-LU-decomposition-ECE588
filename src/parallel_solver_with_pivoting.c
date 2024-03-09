@@ -138,11 +138,11 @@ void readMatrixFromFile(const char* filename) {
 }
 
 void performPartialPivoting(double** a, double** l, int* p, int k) {
-    double max_value = 0.0;
-    int max_index = k;
-    for (int i = k; i < n; i++) {
-        double absolute_value = fabs(a[i][k]);
-        if (absolute_value > max_value) {
+    double max_value = 0.0;         // The maximum value in the column
+    int max_index = k;              // The index of the maximum value in the column
+    for (int i = k; i < n; i++) {   // Find the maximum value in the column
+        double absolute_value = fabs(a[i][k]); // Get the absolute value of the element
+        if (absolute_value > max_value) { 
             max_value = absolute_value;
             max_index = i;
         }
@@ -153,7 +153,7 @@ void performPartialPivoting(double** a, double** l, int* p, int k) {
         exit(EXIT_FAILURE);
     }
 
-    // Swap p[k] and p[max_index]
+    // Swap elements in p
     int temp_p = p[k];
     p[k] = p[max_index];
     p[max_index] = temp_p;
@@ -243,7 +243,7 @@ int main(int argc, char *argv[]) {
 
     for (int k = 0; k < n; k++) {
         // Call the partial pivoting function
-        //performPartialPivoting(a, l, p, k);
+        performPartialPivoting(a, l, p, k);
 
         u[k][k] = a[k][k];
         for (int i = k + 1; i < n; i++) {
@@ -267,7 +267,7 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < n; ++i) {
         permutation_matrix[i][p[i]] = 1.0;
     }
-    // Printing results
+     //Printing results
     // printf("Original matrix:\n");
     // print(a_duplicate, n);
     // printf("L matrix:\n");
@@ -280,23 +280,29 @@ int main(int argc, char *argv[]) {
     // }
 
    // the multiplication function was used to verify the correctness of the LU decomposition
-   // matrix_multiply(permutation_matrix, a_duplicate, PA, n);
-   // matrix_multiply(l, u, LU, n);
+   matrix_multiply(permutation_matrix, a_duplicate, PA, n);
+   matrix_multiply(l, u, LU, n);
 
     // printf("\n\nPA matrix:\n");
     // print(PA, n);
     // printf("LU matrix:\n");
     // print(LU, n);
 
-    // Perform forward and backward substitution
-    forwardSubstitution(l, b, y, n);
+    // Apply permutation to b to get b'
+    double* b_prime = (double*)malloc(n * sizeof(double));
+    for (int i = 0; i < n; i++) {
+        b_prime[i] = b[p[i]];
+    }
+
+    // Now, use b_prime for forward substitution instead of b
+    forwardSubstitution(l, b_prime, y, n);
     backwardSubstitution(u, y, x, n);
 
     // Print the solution vector x
-    // printf("Solution vector x:\n");
-    // for (int i = 0; i < n; i++) {
-    //     printf("x[%d] = %f\n", i, x[i]);
-    // }
+    //  printf("Solution vector x:\n");
+    //  for (int i = 0; i < n; i++) {
+    //      printf("x[%d] = %f\n", i, x[i]);
+    //  }
 
     fprintf(stdout, "\nTime taken: %.9f seconds\n", time_taken);
 
