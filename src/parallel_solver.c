@@ -1,3 +1,5 @@
+// cc -lpthread src/parallel_solver.c -o bin/parallel_solver -std=gnu11
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
