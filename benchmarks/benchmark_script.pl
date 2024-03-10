@@ -20,9 +20,9 @@ printf $fh "%-20s %-15s %-15s\n", "Number of Threads", "Time (Seconds)", "Speedu
 my $single_thread_time;
 
 # Run the program with different numbers of threads (1 to 16)
-for (my $num_threads = 1; $num_threads <= 16; $num_threads++) {
+for (my $num_threads = 1; $num_threads <= 32; $num_threads++) {
 
-    my $output = `./bin/parallel_solver matrices/py_generated/6000x6000.txt $num_threads`; 
+    my $output = `./bin/parallel_solver_linux matrices/py_generated/10000x10000.txt $num_threads`; 
 
     # Extract the time from the output.
     my ($time_in_seconds) = $output =~ /Time taken: ([\d\.]+) seconds/;
