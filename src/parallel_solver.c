@@ -281,9 +281,9 @@ int main(int argc, char *argv[]) {
     //     printf("%d ", p[i]);
     // }
 
-   // the multiplication function was used to verify the correctness of the LU decomposition
-   matrix_multiply(permutation_matrix, a_duplicate, PA, n);
-   matrix_multiply(l, u, LU, n);
+//    // the multiplication function was used to verify the correctness of the LU decomposition
+//    matrix_multiply(permutation_matrix, a_duplicate, PA, n);
+//    matrix_multiply(l, u, LU, n);
 
     // printf("\n\nPA matrix:\n");
     // print(PA, n);
@@ -291,8 +291,8 @@ int main(int argc, char *argv[]) {
     // print(LU, n);
 
     // Perform forward and backward substitution
-    forwardSubstitution(l, b, y, n);
-    backwardSubstitution(u, y, x, n);
+    // forwardSubstitution(l, b, y, n);
+    // backwardSubstitution(u, y, x, n);
 
     // Print the solution vector x
     //  printf("Solution vector x:\n");
