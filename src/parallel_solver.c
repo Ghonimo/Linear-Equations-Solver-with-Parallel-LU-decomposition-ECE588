@@ -290,11 +290,7 @@ int main(int argc, char *argv[]) {
     // printf("LU matrix:\n");
     // print(LU, n);
 
-<<<<<<< HEAD
     // // Perform forward and backward substitution
-=======
-    // Perform forward and backward substitution
->>>>>>> 063734d2ed04e0267c53a5c100a70cc22c9f3272
     // forwardSubstitution(l, b, y, n);
     // backwardSubstitution(u, y, x, n);
 
