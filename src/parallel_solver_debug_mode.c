@@ -6,6 +6,15 @@
 #include <time.h>
 #include <pthread.h>
 
+void forwardSubstitution(double** L, double* b, double* y, int n);
+void backwardSubstitution(double** U, double* y, double* x, int n);
+void print(double** matrix, int n);
+void matrix_multiply(double** matrix1, double** matrix2, double** product, int n);
+void readMatrixFromFile(const char* filename);
+void performPartialPivoting(double** a, double** l, int* p, int k);
+void freeUpMemory(double*** a, double*** a_duplicate, double*** u, double*** l, double*** permutation_matrix, double*** PA, double*** LU, int** p);
+void *parallel_portion(void* thread_data);
+
 double **a, **a_duplicate, **u, **l, **permutation_matrix, **PA, **LU;
 double *b, *x, *y;  // b is the last line of the matrix file, x and y are solution vectors
 int n;
@@ -16,182 +25,6 @@ struct thread_data {
     int id;         // thread ID
     int k;          // current step of the decomposition
 };
-
-/**
- * Function to solve the equation Ly = b for y
- *  L The lower triangular matrix
- *  b The right-hand side vector
- *  y The solution vector
- * n The size of the matrix
- */
-void forwardSubstitution(double** L, double* b, double* y, int n) {
-    for (int i = 0; i < n; i++) {
-        y[i] = b[i];
-        for (int k = 0; k < i; k++)
-            y[i] -= L[i][k] * y[k];
-        y[i] = y[i] / L[i][i];
-    }
-}
-
-/**
- * Function to solve the equation Ux = y for x
- * U The upper triangular matrix
- * y The right-hand side vector
- * x The solution vector
- * n The size of the matrix
- */
-void backwardSubstitution(double** U, double* y, double* x, int n) {
-    for (int i = n - 1; i >= 0; i--) {
-        x[i] = y[i];
-        for (int j = i + 1; j < n; j++) {
-            x[i] -= U[i][j] * x[j];
-        }
-        x[i] /= U[i][i];
-    }
-}
-
-/**
- * Function to print a matrix
- * matrix The matrix to be printed
- * n The size of the matrix
- */
-void print(double** matrix, int n) {
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            printf("%f  ", matrix[i][j]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
-
-/**
- * Function to multiply two matrices
- * matrix1 The first matrix
- * matrix2 The second matrix
- * product The result matrix
- * n The size of the matrices
- */
-void matrix_multiply(double** matrix1, double** matrix2, double** product, int n) {
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            product[i][j] = 0;
-            for (int k = 0; k < n; ++k) {
-                product[i][j] += matrix1[i][k] * matrix2[k][j];
-            }
-        }
-    }
-}
-
-/**
- * Function to be executed by each thread to assign values to matrix A in parallel
- * thread_data The thread data containing the thread ID and the value of k
- */
-void* parallel_portion(void* thread_data) {
-    struct thread_data* my_data;
-    my_data = (struct thread_data*) thread_data;
-    int id = my_data->id;
-    int k = my_data->k;
-
-    printf("Thread %d: Computing step k: %d\n", id, k);
-    int interation_per_thread = n - 1 - k;
-    int start = (k + 1) + id * interation_per_thread / numThreads;
-    int end = (k + 1) + (id + 1) * interation_per_thread / numThreads < n ? (k + 1) + (id + 1) * interation_per_thread / numThreads : n;
-    for (int i = start; i < end; i++) {
-        for (int j = k + 1; j < n; j++) {
-            a[i][j] -= l[i][k] * u[k][j];
-            printf("Thread %d: A[%d][%d] = %f\n", id, i, j, a[i][j]);
-        }
-    }
-    pthread_exit(NULL); 
-}
-
-/**
- * Function to read a matrix from a file
- * filename The name of the file containing the matrix
- */
-void readMatrixFromFile(const char* filename) {
-    FILE* file = fopen(filename, "r");
-    if (file == NULL) {
-        perror("Error opening file");
-        exit(EXIT_FAILURE);
-    }
-
-    fscanf(file, "%d", &n); // Read the size of the matrix from the first line
-
-    a = (double**)malloc(n * sizeof(double*));
-    a_duplicate = (double**)malloc(n * sizeof(double*));
-    for (int i = 0; i < n; i++) {
-        a[i] = (double*)malloc(n * sizeof(double));
-        a_duplicate[i] = (double*)malloc(n * sizeof(double));
-        for (int j = 0; j < n; j++) {
-            fscanf(file, "%lf", &a[i][j]);
-            a_duplicate[i][j] = a[i][j]; // Copy the value to a_duplicate
-        }
-    }
-    
-    // Assuming the vector b is in the last line after the matrix
-    b = (double*)malloc(n * sizeof(double));
-    for (int i = 0; i < n; i++) {
-        fscanf(file, "%lf", &b[i]);
-    }
-
-    fclose(file);
-}
-
-void performPartialPivoting(double** a, double** l, int* p, int k) {
-    double max_value = 0.0;
-    int max_index = k;
-    for (int i = k; i < n; i++) {
-        double absolute_value = fabs(a[i][k]);
-        if (absolute_value > max_value) {
-            max_value = absolute_value;
-            max_index = i;
-        }
-    }
-
-    if (max_value == 0.0) {
-        fprintf(stderr, "This is a singular matrix, LU Decomposition is not possible\n");
-        exit(EXIT_FAILURE);
-    }
-
-    // Swap p[k] and p[max_index]
-    int temp_p = p[k];
-    p[k] = p[max_index];
-    p[max_index] = temp_p;
-
-    // Swap rows in a
-    double* temp_a = a[k];
-    a[k] = a[max_index];
-    a[max_index] = temp_a;
-
-    // Swap rows in l for the elements before diagonal (k)
-    for (int i = 0; i < k; i++) {
-        double temp_l = l[k][i];
-        l[k][i] = l[max_index][i];
-        l[max_index][i] = temp_l;
-    }
-}
-
-void freeUpMemory(double*** a, double*** a_duplicate, double*** u, double*** l, double*** permutation_matrix, double*** PA, double*** LU, int** p) {
-    for (int i = 0; i < n; i++) {
-        free((*a)[i]);
-        free((*a_duplicate)[i]);
-        free((*u)[i]);
-        free((*l)[i]);
-        free((*permutation_matrix)[i]);
-        free((*PA)[i]);
-        free((*LU)[i]);
-    }
-    free(*a);
-    free(*a_duplicate);
-    free(*u);
-    free(*l);
-    free(*permutation_matrix);
-    free(*PA);
-    free(*LU);
-    free(*p);
-}
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -307,4 +140,181 @@ int main(int argc, char *argv[]) {
     // Call the freeUpMemory function to deallocate memory
     freeUpMemory(&a, &a_duplicate, &u, &l, &permutation_matrix, &PA, &LU, &p);
     return 0;
+}
+
+/**
+ * Function to read a matrix from a file
+ * filename The name of the file containing the matrix
+ */
+void readMatrixFromFile(const char* filename) {
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    fscanf(file, "%d", &n); // Read the size of the matrix from the first line
+
+    a = (double**)malloc(n * sizeof(double*));
+    a_duplicate = (double**)malloc(n * sizeof(double*));
+    for (int i = 0; i < n; i++) {
+        a[i] = (double*)malloc(n * sizeof(double));
+        a_duplicate[i] = (double*)malloc(n * sizeof(double));
+        for (int j = 0; j < n; j++) {
+            fscanf(file, "%lf", &a[i][j]);
+            a_duplicate[i][j] = a[i][j]; // Copy the value to a_duplicate
+        }
+    }
+    
+    // Assuming the vector b is in the last line after the matrix
+    b = (double*)malloc(n * sizeof(double));
+    for (int i = 0; i < n; i++) {
+        fscanf(file, "%lf", &b[i]);
+    }
+
+    fclose(file);
+}
+
+/**
+ * Function to be executed by each thread to assign values to matrix A in parallel
+ * thread_data The thread data containing the thread ID and the value of k
+ */
+void* parallel_portion(void* thread_data) {
+    struct thread_data* my_data;
+    my_data = (struct thread_data*) thread_data;
+    int id = my_data->id;
+    int k = my_data->k;
+
+    printf("Thread %d: Computing step k: %d\n", id, k);
+    int interation_per_thread = n - 1 - k;
+    int start = (k + 1) + id * interation_per_thread / numThreads;
+    int end = (k + 1) + (id + 1) * interation_per_thread / numThreads < n ? (k + 1) + (id + 1) * interation_per_thread / numThreads : n;
+    for (int i = start; i < end; i++) {
+        for (int j = k + 1; j < n; j++) {
+            a[i][j] -= l[i][k] * u[k][j];
+            printf("Thread %d: A[%d][%d] = %f\n", id, i, j, a[i][j]);
+        }
+    }
+    pthread_exit(NULL); 
+}
+
+
+/**
+ * Function to solve the equation Ly = b for y
+ *  L The lower triangular matrix
+ *  b The right-hand side vector
+ *  y The solution vector
+ * n The size of the matrix
+ */
+void forwardSubstitution(double** L, double* b, double* y, int n) {
+    for (int i = 0; i < n; i++) {
+        y[i] = b[i];
+        for (int k = 0; k < i; k++)
+            y[i] -= L[i][k] * y[k];
+        y[i] = y[i] / L[i][i];
+    }
+}
+
+/**
+ * Function to solve the equation Ux = y for x
+ * U The upper triangular matrix
+ * y The right-hand side vector
+ * x The solution vector
+ * n The size of the matrix
+ */
+void backwardSubstitution(double** U, double* y, double* x, int n) {
+    for (int i = n - 1; i >= 0; i--) {
+        x[i] = y[i];
+        for (int j = i + 1; j < n; j++) {
+            x[i] -= U[i][j] * x[j];
+        }
+        x[i] /= U[i][i];
+    }
+}
+
+/**
+ * Function to print a matrix
+ * matrix The matrix to be printed
+ * n The size of the matrix
+ */
+void print(double** matrix, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            printf("%f  ", matrix[i][j]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+/**
+ * Function to multiply two matrices
+ * matrix1 The first matrix
+ * matrix2 The second matrix
+ * product The result matrix
+ * n The size of the matrices
+ */
+void matrix_multiply(double** matrix1, double** matrix2, double** product, int n) {
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            product[i][j] = 0;
+            for (int k = 0; k < n; ++k) {
+                product[i][j] += matrix1[i][k] * matrix2[k][j];
+            }
+        }
+    }
+}
+
+void performPartialPivoting(double** a, double** l, int* p, int k) {
+    double max_value = 0.0;
+    int max_index = k;
+    for (int i = k; i < n; i++) {
+        double absolute_value = fabs(a[i][k]);
+        if (absolute_value > max_value) {
+            max_value = absolute_value;
+            max_index = i;
+        }
+    }
+
+    if (max_value == 0.0) {
+        fprintf(stderr, "This is a singular matrix, LU Decomposition is not possible\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Swap p[k] and p[max_index]
+    int temp_p = p[k];
+    p[k] = p[max_index];
+    p[max_index] = temp_p;
+
+    // Swap rows in a
+    double* temp_a = a[k];
+    a[k] = a[max_index];
+    a[max_index] = temp_a;
+
+    // Swap rows in l for the elements before diagonal (k)
+    for (int i = 0; i < k; i++) {
+        double temp_l = l[k][i];
+        l[k][i] = l[max_index][i];
+        l[max_index][i] = temp_l;
+    }
+}
+
+void freeUpMemory(double*** a, double*** a_duplicate, double*** u, double*** l, double*** permutation_matrix, double*** PA, double*** LU, int** p) {
+    for (int i = 0; i < n; i++) {
+        free((*a)[i]);
+        free((*a_duplicate)[i]);
+        free((*u)[i]);
+        free((*l)[i]);
+        free((*permutation_matrix)[i]);
+        free((*PA)[i]);
+        free((*LU)[i]);
+    }
+    free(*a);
+    free(*a_duplicate);
+    free(*u);
+    free(*l);
+    free(*permutation_matrix);
+    free(*PA);
+    free(*LU);
+    free(*p);
 }
