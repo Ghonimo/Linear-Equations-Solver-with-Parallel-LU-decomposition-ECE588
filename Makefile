@@ -5,7 +5,7 @@
 #	Comments: 
 #	 
 #	$ make clean    --->   command also creates 
-#	placeholder.md, an empty file that ensure the
+#	placeholder.md, an blank file to ensure the
 #	empty directory bin/ does not disappear
 #	
 #
@@ -14,18 +14,24 @@
 all:
 	cc -Wall -lpthread src/sequential_solver.c -o bin/serial_solver
 	cc -Wall -lpthread src/parallel_solver.c -o bin/parallel_solver
+	cc -Wall -lpthread src/parallel_solver_with_pivoting.c -o bin/parallel_solver_with_pivoting
 	cc -Wall -lpthread src/paralex.c -o bin/paralex
 
 thread:
 	cc -Wall -lpthread -fsanitize=thread src/parallel_solver.c -o bin/parallel_solver
+	cc -Wall -lpthread -fsanitize=thread src/parallel_solver_with_pivoting.c -o bin/parallel_solver_with_pivoting
 	cc -Wall -lpthread -fsanitize=thread src/paralex.c -o bin/paralex
 
 address:
 	cc -Wall -lpthread -fsanitize=address src/parallel_solver.c -o bin/parallel_solver
+	cc -Wall -lpthread -fsanitize=address src/parallel_solver_with_pivoting.c -o bin/parallel_solver_with_pivoting
 	cc -Wall -lpthread -fsanitize=address src/paralex.c -o bin/paralex
 
 parallel:
 	cc -Wall -lpthread src/parallel_solver.c -o bin/parallel_solver
+
+pivoting:
+	cc -Wall -lpthread src/parallel_solver_with_pivoting.c -o bin/parallel_solver_with_pivoting
 
 sequential:
 	cc -Wall src/sequential_solver.c -o bin/sequential_solver

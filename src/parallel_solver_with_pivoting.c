@@ -236,8 +236,9 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    double max_value;
-    int max_index;
+    // FIXME: These var declarations are unnecessary
+    // double max_value;
+    // int max_index;
     pthread_t threads[numThreads];
     struct thread_data thread_data_array[numThreads];
 
@@ -267,26 +268,26 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < n; ++i) {
         permutation_matrix[i][p[i]] = 1.0;
     }
-     //Printing results
-    // printf("Original matrix:\n");
-    // print(a_duplicate, n);
-    // printf("L matrix:\n");
-    // print(l, n);
-    // printf("U matrix:\n");
-    // print(u, n);
-    // printf("P array:\n");
-    // for (int i = 0; i < n; ++i) {
-    //     printf("%d ", p[i]);
-    // }
+    // Printing results
+    printf("Original matrix:\n");
+    print(a_duplicate, n);
+    printf("L matrix:\n");
+    print(l, n);
+    printf("U matrix:\n");
+    print(u, n);
+    printf("P array:\n");
+    for (int i = 0; i < n; ++i) {
+        printf("%d ", p[i]);
+    }
 
-   // the multiplication function was used to verify the correctness of the LU decomposition
-   matrix_multiply(permutation_matrix, a_duplicate, PA, n);
-   matrix_multiply(l, u, LU, n);
+    // the multiplication function was used to verify the correctness of the LU decomposition
+    matrix_multiply(permutation_matrix, a_duplicate, PA, n);
+    matrix_multiply(l, u, LU, n);
 
-    // printf("\n\nPA matrix:\n");
-    // print(PA, n);
-    // printf("LU matrix:\n");
-    // print(LU, n);
+    printf("\n\nPA matrix:\n");
+    print(PA, n);
+    printf("LU matrix:\n");
+    print(LU, n);
 
     // Apply permutation to b to get b'
     double* b_prime = (double*)malloc(n * sizeof(double));
@@ -299,10 +300,10 @@ int main(int argc, char *argv[]) {
     backwardSubstitution(u, y, x, n);
 
     // Print the solution vector x
-    //  printf("Solution vector x:\n");
-    //  for (int i = 0; i < n; i++) {
-    //      printf("x[%d] = %f\n", i, x[i]);
-    //  }
+    printf("Solution vector x:\n");
+    for (int i = 0; i < n; i++) {
+        printf("x[%d] = %f\n", i, x[i]);
+    }
 
     fprintf(stdout, "\nTime taken: %.9f seconds\n", time_taken);
 
