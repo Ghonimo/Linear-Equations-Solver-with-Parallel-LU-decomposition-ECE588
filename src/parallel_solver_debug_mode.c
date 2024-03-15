@@ -228,14 +228,14 @@ void* parallel_portion(void* thread_data) {
     int id = my_data->id;
     int k = my_data->k;
 
-    //printf("Thread %d: Computing step k: %d\n", id, k);
-    int interation_per_thread = n - 1 - k;
-    int start = (k + 1) + id * interation_per_thread / numThreads;
-    int end = (k + 1) + (id + 1) * interation_per_thread / numThreads < n ? (k + 1) + (id + 1) * interation_per_thread / numThreads : n;
+    printf("Thread %d: Computing step k: %d\n", id, k);
+    int iteration_per_thread = n - 1 - k;
+    int start = (k + 1) + id * iteration_per_thread / numThreads;
+    int end = (k + 1) + (id + 1) * iteration_per_thread / numThreads < n ? (k + 1) + (id + 1) * iteration_per_thread / numThreads : n;
     for (int i = start; i < end; i++) {
         for (int j = k + 1; j < n; j++) {
             a[i][j] -= l[i][k] * u[k][j]; // Update element A[i][j] for LU decomposition.
-            //printf("Thread %d: A[%d][%d] = %f\n", id, i, j, a[i][j]);
+            printf("Thread %d: A[%d][%d] = %f\n", id, i, j, a[i][j]);
         }
     }
     pthread_exit(NULL); // Terminate the thread after completing its task.
