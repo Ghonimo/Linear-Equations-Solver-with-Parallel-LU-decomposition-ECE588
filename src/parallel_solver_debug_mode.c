@@ -229,9 +229,10 @@ void* parallel_portion(void* thread_data) {
     int k = my_data->k;
 
     printf("Thread %d: Computing step k: %d\n", id, k);
-    int iteration_per_thread = n - 1 - k;
-    int start = (k + 1) + id * iteration_per_thread / numThreads;
-    int end = (k + 1) + (id + 1) * iteration_per_thread / numThreads < n ? (k + 1) + (id + 1) * iteration_per_thread / numThreads : n;
+    int rows_per_step = n - 1 - k;
+    int start = (k + 1) + id * rows_per_step / numThreads;
+    int end = (k + 1) + (id + 1) * rows_per_step / numThreads < n ? (k + 1) + (id + 1) * rows_per_step / numThreads : n;
+    printf("Thread %d: row from: %d to: %d\n", id, start, end);
     for (int i = start; i < end; i++) {
         for (int j = k + 1; j < n; j++) {
             a[i][j] -= l[i][k] * u[k][j]; // Update element A[i][j] for LU decomposition.
