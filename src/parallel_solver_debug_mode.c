@@ -15,6 +15,7 @@ void readMatrixFromFile(const char* filename);
 void performPartialPivoting(double** a, double** l, int* p, int k);
 void freeUpMemory(double*** a, double*** a_duplicate, double*** u, double*** l, double*** permutation_matrix, double*** PA, double*** LU, int** p);
 void *parallel_portion(void* thread_data);
+double ludecomp_verify(double** P, double** A, double** L, double** U, double** residual, int n);
 // ----------------------------------------------
 
 double **a, **a_duplicate, **u, **l, **permutation_matrix, **PA, **LU;
@@ -73,6 +74,11 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // Allocate memory for the residual matrix 'residual'
+    double** residual = (double**)malloc(n * sizeof(double*));
+    for (int i = 0; i < n; i++) {
+        residual[i] = (double*)malloc(n * sizeof(double));
+    }
     double max_value;
     int max_index;
     pthread_t threads[numThreads];
@@ -101,6 +107,7 @@ int main(int argc, char *argv[]) {
         }
     }
     clock_gettime(CLOCK_REALTIME, &end); // Record end time
+    printf("Completed LU Decomposition with %d threads for %dx%d matrix.\n", numThreads, n, n);
     double time_taken = end.tv_sec - start.tv_sec + (end.tv_nsec - start.tv_nsec) / 1e9; // Calculate elapsed time in seconds
 
     for (int i = 0; i < n; ++i) {
@@ -118,9 +125,9 @@ int main(int argc, char *argv[]) {
         printf("%d ", p[i]);
     }
 
-//    // the multiplication function was used to verify the correctness of the LU decomposition
-       matrix_multiply(permutation_matrix, a_duplicate, PA, n);
-       matrix_multiply(l, u, LU, n);
+   // the multiplication function was used to verify the correctness of the LU decomposition
+    matrix_multiply(permutation_matrix, a_duplicate, PA, n);
+    matrix_multiply(l, u, LU, n);
 
     printf("\n\nPA matrix:\n");
     print(PA, n);
@@ -137,7 +144,16 @@ int main(int argc, char *argv[]) {
          printf("x[%d] = %f\n", i, x[i]);
      }
 
+    double norm = ludecomp_verify(permutation_matrix, a_duplicate, l, u, residual, n);
+    printf("\n Frobenius norm of the residual matrix: %f\n", norm);
+
     fprintf(stdout, "\nTime taken: %.9f seconds\n", time_taken);
+
+    // Free up memory for the residual matrix 'residual'
+    for (int i = 0; i < n; i++) {
+        free(residual[i]);
+    }
+    free(residual);
 
     // Call the freeUpMemory function to deallocate memory
     freeUpMemory(&a, &a_duplicate, &u, &l, &permutation_matrix, &PA, &LU, &p);
@@ -212,14 +228,14 @@ void* parallel_portion(void* thread_data) {
     int id = my_data->id;
     int k = my_data->k;
 
-    printf("Thread %d: Computing step k: %d\n", id, k);
+    //printf("Thread %d: Computing step k: %d\n", id, k);
     int interation_per_thread = n - 1 - k;
     int start = (k + 1) + id * interation_per_thread / numThreads;
     int end = (k + 1) + (id + 1) * interation_per_thread / numThreads < n ? (k + 1) + (id + 1) * interation_per_thread / numThreads : n;
     for (int i = start; i < end; i++) {
         for (int j = k + 1; j < n; j++) {
             a[i][j] -= l[i][k] * u[k][j]; // Update element A[i][j] for LU decomposition.
-            printf("Thread %d: A[%d][%d] = %f\n", id, i, j, a[i][j]);
+            //printf("Thread %d: A[%d][%d] = %f\n", id, i, j, a[i][j]);
         }
     }
     pthread_exit(NULL); // Terminate the thread after completing its task.
@@ -410,3 +426,51 @@ void freeUpMemory(double*** a, double*** a_duplicate, double*** u, double*** l, 
     free(*LU);
     free(*p);
 }
+
+
+///////////
+/**
+ * Calculates the residual norm to verify the correctness of LU Decomposition.
+ *
+ * This function computes the residual matrix by subtracting the product of
+ * L and U matrices from the product of the permutation matrix P and the original
+ * matrix A. The residual matrix reflects the difference between the left-hand
+ * and right-hand sides of the PA=LU equation. The function then calculates and
+ * returns the Frobenius norm of the residual matrix as a measure of the decomposition's
+ * accuracy. A smaller norm suggests a more accurate decomposition.
+ *
+ * Parameters:
+ *  - P: A double pointer to the permutation matrix.
+ *  - A: A double pointer to the original matrix.
+ *  - L: A double pointer to the lower triangular matrix.
+ *  - U: A double pointer to the upper triangular matrix.
+ *  - residual: A double pointer to the residual matrix where the residual will be stored.
+ *  - n: The size of the matrices, representing an n x n system.
+ *
+ * Returns:
+ *  - The Frobenius norm of the residual matrix, which quantifies the accuracy of the LU Decomposition.
+ */
+double ludecomp_verify(double** P, double** A, double** L, double** U, double** residual, int n) {
+    // Compute the residual matrix: (PA - LU)
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            residual[i][j] = 0;
+            for (int k = 0; k < n; k++) {
+                residual[i][j] += P[i][k] * A[k][j];          // Adding product of P and A matrices
+                residual[i][j] -= L[i][k] * U[k][j];          // Subtracting product of L and U matrices
+            }
+        }
+    }
+
+    // Calculate the Frobenius norm of the residual matrix
+    double norm = 0;
+    for (int i = 0; i < n; i++) {
+        double column_norm = 0;
+        for (int j = 0; j < n; j++) {
+            column_norm += residual[j][i] * residual[j][i]; // Summing squares of each element in a column
+        }
+        norm += sqrt(column_norm); // Adding the square root of the summed squares of each column
+    }
+    return norm;                    // Return the Frobenius norm as the measure of accuracy
+}
+///////////
