@@ -12,10 +12,16 @@
 ###########################################################
 
 all:
-	cc -Wall -lpthread src/sequential_solver.c -o bin/serial_solver
+	cc -Wall src/sequential_solver.c -o bin/sequential_solver
 	cc -Wall -lpthread src/parallel_solver.c -o bin/parallel_solver
 	cc -Wall -lpthread src/parallel_solver_with_pivoting.c -o bin/parallel_solver_with_pivoting
 	cc -Wall -lpthread src/paralex.c -o bin/paralex
+
+linux:
+	cc src/sequential_solver.c -o bin/sequential_solver -Wall -std=gnu11
+	cc src/parallel_solver.c -o bin/parallel_solver -Wall -lpthread -std=gnu11
+	cc src/parallel_solver_with_pivoting.c -o bin/parallel_solver_with_pivoting -Wall -lpthread -std=gnu11
+	cc src/paralex.c -o bin/paralex -Wall -lpthread -std=gnu11
 
 thread:
 	cc -Wall -lpthread -fsanitize=thread src/parallel_solver.c -o bin/parallel_solver
