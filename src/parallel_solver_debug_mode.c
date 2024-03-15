@@ -6,6 +6,7 @@
 #include <time.h>
 #include <pthread.h>
 
+// Function prototypes --------------------------
 void forwardSubstitution(double** L, double* b, double* y, int n);
 void backwardSubstitution(double** U, double* y, double* x, int n);
 void print(double** matrix, int n);
@@ -14,6 +15,7 @@ void readMatrixFromFile(const char* filename);
 void performPartialPivoting(double** a, double** l, int* p, int k);
 void freeUpMemory(double*** a, double*** a_duplicate, double*** u, double*** l, double*** permutation_matrix, double*** PA, double*** LU, int** p);
 void *parallel_portion(void* thread_data);
+// ----------------------------------------------
 
 double **a, **a_duplicate, **u, **l, **permutation_matrix, **PA, **LU;
 double *b, *x, *y;  // b is the last line of the matrix file, x and y are solution vectors
@@ -153,8 +155,10 @@ void readMatrixFromFile(const char* filename) {
         exit(EXIT_FAILURE);
     }
 
-    fscanf(file, "%d", &n); // Read the size of the matrix from the first line
+    // Read the size of the matrix from the first line
+    fscanf(file, "%d", &n); 
 
+    // Reading the matrix from the file
     a = (double**)malloc(n * sizeof(double*));
     a_duplicate = (double**)malloc(n * sizeof(double*));
     for (int i = 0; i < n; i++) {
@@ -166,7 +170,7 @@ void readMatrixFromFile(const char* filename) {
         }
     }
     
-    // Assuming the vector b is in the last line after the matrix
+    // read vector b from the last line after the matrix
     b = (double*)malloc(n * sizeof(double));
     for (int i = 0; i < n; i++) {
         fscanf(file, "%lf", &b[i]);
@@ -176,8 +180,31 @@ void readMatrixFromFile(const char* filename) {
 }
 
 /**
- * Function to be executed by each thread to assign values to matrix A in parallel
- * thread_data The thread data containing the thread ID and the value of k
+ * Executes LU decomposition steps in parallel by updating matrix A.
+ *
+ * This function is designed to run as a separate thread, where each thread
+ * works on a different portion of matrix A during the LU decomposition process.
+ * It updates the elements of A based on the current decomposition step, represented
+ * by the index k. The work is divided among threads so that each thread updates
+ * a unique set of rows, ensuring parallel computation without data races on distinct rows.
+ *
+ * Parameters:
+ *  - thread_data: Pointer to struct containing thread ID and the current decomposition step (k).
+ *                 The struct should have fields 'id' for the thread ID and 'k' for the step index.
+ *
+ * Process:
+ *  - Retrieves its assigned portion of the matrix based on 'k' and its thread ID ('id').
+ *  - Iterates over its portion, updating elements in matrix A using values from L and U matrices.
+ *    The formula applied is A[i][j] -= L[i][k] * U[k][j] for each element in the assigned range.
+ *  - Prints updates to A[i][j] for transparency and debugging purposes.
+ *
+ * This parallel portion aims to expedite the LU decomposition process by leveraging
+ * multi-threading, where each thread contributes to computing parts of the LU factorization.
+ * 
+ * Note:
+ *  - 'n' is the global variable representing the size of the square matrix.
+ *  - 'numThreads' is the global variable indicating how many threads are participating
+ *    in the decomposition process.
  */
 void* parallel_portion(void* thread_data) {
     struct thread_data* my_data;
@@ -191,20 +218,32 @@ void* parallel_portion(void* thread_data) {
     int end = (k + 1) + (id + 1) * interation_per_thread / numThreads < n ? (k + 1) + (id + 1) * interation_per_thread / numThreads : n;
     for (int i = start; i < end; i++) {
         for (int j = k + 1; j < n; j++) {
-            a[i][j] -= l[i][k] * u[k][j];
+            a[i][j] -= l[i][k] * u[k][j]; // Update element A[i][j] for LU decomposition.
             printf("Thread %d: A[%d][%d] = %f\n", id, i, j, a[i][j]);
         }
     }
-    pthread_exit(NULL); 
+    pthread_exit(NULL); // Terminate the thread after completing its task.
 }
 
-
 /**
- * Function to solve the equation Ly = b for y
- *  L The lower triangular matrix
- *  b The right-hand side vector
- *  y The solution vector
- * n The size of the matrix
+ * Performs forward substitution to solve the equation Ly = b for y.
+ * where L is a lower triangular matrix. This process takes advantage of the
+ * triangular structure to solve for each component of y sequentially, starting
+ * from the top row. The algorithm subtracts the known contributions of previously
+ * calculated y values from the current b value, then divides by the diagonal coefficient
+ * of L to solve for the current y. This method ensures a solution with a linear time
+ * complexity relative to the number of equations, which is highly efficient for
+ * lower triangular matrices.
+ *
+ * Parameters:
+ *  - L: A double pointer to the lower triangular matrix L, where L[i][j] = 0 for all j > i.
+ *       The matrix is assumed to be non-singular (no zero elements on the diagonal).
+ *  - b: A pointer to the vector b, representing the right-hand side of the equation Ly = b.
+ *  - y: A pointer to the solution vector y, where the solution will be stored.
+ *       The memory for y should be allocated before calling this function.
+ *  - n: The size of the matrix L and vectors b and y, representing the number of linear equations.
+ *
+ * The function directly modifies the array pointed to by y to contain the solution of Ly = b.
  */
 void forwardSubstitution(double** L, double* b, double* y, int n) {
     for (int i = 0; i < n; i++) {
@@ -216,11 +255,26 @@ void forwardSubstitution(double** L, double* b, double* y, int n) {
 }
 
 /**
- * Function to solve the equation Ux = y for x
- * U The upper triangular matrix
- * y The right-hand side vector
- * x The solution vector
- * n The size of the matrix
+ * Performs backward substitution to solve the equation Ux = y for x.
+ * where U is an upper triangular matrix. This algorithm utilizes the upper triangular
+ * structure by starting the solution process from the bottom row and moving upwards,
+ * solving for each component of x in a sequential manner. It subtracts the contributions
+ * of previously solved x values from the current y value and then divides by the diagonal
+ * coefficient of U to solve for the current x. This backward approach ensures that the
+ * solution can be found efficiently, leveraging the matrix's structure to reduce computation.
+ *
+ * Parameters:
+ *  - U: A double pointer to the upper triangular matrix U, where U[i][j] = 0 for all j < i.
+ *       The matrix is assumed to be non-singular (no zero elements on the diagonal).
+ *  - y: A pointer to the vector y, representing the right-hand side of the equation Ux = y.
+ *  - x: A pointer to the solution vector x, where the solution will be stored.
+ *       The memory for x should be allocated before calling this function.
+ *  - n: The size of the matrix U and vectors y and x, representing the number of linear equations.
+ *
+ * The function modifies the array pointed to by x to contain the solution of Ux = y.
+ * The solution is computed in reverse order, starting from the last equation and
+ * moving up to the first, effectively utilizing the upper triangular form of U
+ * to simplify the calculation process.
  */
 void backwardSubstitution(double** U, double* y, double* x, int n) {
     for (int i = n - 1; i >= 0; i--) {
@@ -233,9 +287,13 @@ void backwardSubstitution(double** U, double* y, double* x, int n) {
 }
 
 /**
- * Function to print a matrix
- * matrix The matrix to be printed
- * n The size of the matrix
+ * Prints a square matrix.
+ * 
+ * This function iterates through a square matrix, printing each element
+ * formatted as a floating point number. Rows are printed on new lines.
+ *
+ * @param matrix A double pointer to the square matrix to be printed.
+ * @param n The dimension of the square matrix.
  */
 void print(double** matrix, int n) {
     for (int i = 0; i < n; i++) {
@@ -248,11 +306,17 @@ void print(double** matrix, int n) {
 }
 
 /**
- * Function to multiply two matrices
- * matrix1 The first matrix
- * matrix2 The second matrix
- * product The result matrix
- * n The size of the matrices
+ * Multiplies two square matrices.
+ * 
+ * This function computes the product of two square matrices (matrix1 and matrix2)
+ * and stores the result in 'product'. The multiplication follows the standard rule
+ * of matrix multiplication, iterating through rows of the first matrix and columns
+ * of the second matrix.
+ *
+ * @param matrix1 A double pointer to the first square matrix.
+ * @param matrix2 A double pointer to the second square matrix.
+ * @param product A double pointer to the square matrix where the result is stored.
+ * @param n The dimension of the square matrices.
  */
 void matrix_multiply(double** matrix1, double** matrix2, double** product, int n) {
     for (int i = 0; i < n; ++i) {
@@ -265,6 +329,19 @@ void matrix_multiply(double** matrix1, double** matrix2, double** product, int n
     }
 }
 
+/**
+ * Performs partial pivoting on matrices for LU decomposition.
+ *
+ * This function searches for the maximum absolute value in column k below or at
+ * the diagonal and swaps the current row with the row containing this maximum
+ * to maintain numerical stability in LU decomposition. It also updates the
+ * permutation vector to reflect the row swaps.
+ *
+ * @param a A double pointer to the matrix being decomposed.
+ * @param l A double pointer to the lower triangular matrix being formed.
+ * @param p An integer pointer to the permutation vector that records the row swaps.
+ * @param k The current column (and row) index at which the pivoting is performed.
+ */
 void performPartialPivoting(double** a, double** l, int* p, int k) {
     double max_value = 0.0;
     int max_index = k;
@@ -299,6 +376,21 @@ void performPartialPivoting(double** a, double** l, int* p, int k) {
     }
 }
 
+/**
+ * Frees dynamically allocated memory for matrices and vectors.
+ *
+ * This function releases the memory allocated for matrices and vectors used
+ * during LU decomposition and solving linear systems, preventing memory leaks.
+ *
+ * @param a A pointer to a double pointer to the original matrix.
+ * @param a_duplicate A pointer to a double pointer to the duplicate of the original matrix.
+ * @param u A pointer to a double pointer to the upper triangular matrix.
+ * @param l A pointer to a double pointer to the lower triangular matrix.
+ * @param permutation_matrix A pointer to a double pointer to the permutation matrix.
+ * @param PA A pointer to a double pointer to the product of permutation and original matrices.
+ * @param LU A pointer to a double pointer to the product of L and U matrices.
+ * @param p A pointer to an integer pointer to the permutation vector.
+ */
 void freeUpMemory(double*** a, double*** a_duplicate, double*** u, double*** l, double*** permutation_matrix, double*** PA, double*** LU, int** p) {
     for (int i = 0; i < n; i++) {
         free((*a)[i]);
