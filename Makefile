@@ -2,54 +2,48 @@
 #
 #	Makefile for ECE 588 Final Project - Winter '24
 #
-#	Comments: Compile commands for parallel2.c are
-#	commented out because it throws warning and 
-#	prematurely exits. 'make clean' creates 
-#	placeholder.md, an empty file that ensure the
+#	Comments: 
+#	 
+#	$ make clean    --->   command also creates 
+#	placeholder.md, an blank file to ensure the
 #	empty directory bin/ does not disappear
 #	
 #
 ###########################################################
 
 all:
-	cc -Wall -lpthread src/main.c -o bin/serial_solver
-	cc -Wall -lpthread src/main_parallel.c -o bin/parallel_solver
-	cc -Wall -lpthread src/parallel1.c -o bin/parallel1
-	#cc -Wall -lpthread src/parallel2.c -o bin/parallel2
-	cc -Wall -lpthread src/parallel3.c -o bin/parallel3
+	cc -Wall src/sequential_solver.c -o bin/sequential_solver
+	cc -Wall -lpthread src/parallel_solver.c -o bin/parallel_solver
+	cc -Wall -lpthread src/parallel_solver_with_pivoting.c -o bin/parallel_solver_with_pivoting
 	cc -Wall -lpthread src/paralex.c -o bin/paralex
 
+linux:
+	cc src/sequential_solver.c -o bin/sequential_solver -Wall -std=gnu11
+	cc src/parallel_solver.c -o bin/parallel_solver -Wall -lpthread -std=gnu11
+	cc src/parallel_solver_with_pivoting.c -o bin/parallel_solver_with_pivoting -Wall -lpthread -std=gnu11
+	cc src/paralex.c -o bin/paralex -Wall -lpthread -std=gnu11
+
 thread:
-	cc -Wall -lpthread -fsanitize=thread src/main_parallel.c -o bin/parallel_solver
-	cc -Wall -lpthread -fsanitize=thread src/parallel1.c -o bin/parallel1
-	#cc -Wall -lpthread -fsanitize=thread src/parallel2.c -o bin/parallel2
-	cc -Wall -lpthread -fsanitize=thread src/parallel3.c -o bin/parallel3
+	cc -Wall -lpthread -fsanitize=thread src/parallel_solver.c -o bin/parallel_solver
+	cc -Wall -lpthread -fsanitize=thread src/parallel_solver_with_pivoting.c -o bin/parallel_solver_with_pivoting
 	cc -Wall -lpthread -fsanitize=thread src/paralex.c -o bin/paralex
 
 address:
-	cc -Wall -lpthread -fsanitize=address src/main_parallel.c -o bin/parallel_solver
-	cc -Wall -lpthread -fsanitize=address src/parallel1.c -o bin/parallel1
-	#cc -Wall -lpthread -fsanitize=address src/parallel2.c -o bin/parallel2
-	cc -Wall -lpthread -fsanitize=address src/parallel3.c -o bin/parallel3
+	cc -Wall -lpthread -fsanitize=address src/parallel_solver.c -o bin/parallel_solver
+	cc -Wall -lpthread -fsanitize=address src/parallel_solver_with_pivoting.c -o bin/parallel_solver_with_pivoting
 	cc -Wall -lpthread -fsanitize=address src/paralex.c -o bin/paralex
 
 parallel:
-	cc -Wall -lpthread src/main_parallel.c -o bin/parallel_solver
+	cc -Wall -lpthread src/parallel_solver.c -o bin/parallel_solver
 
-p1:
-	cc -Wall -lpthread src/parallel1.c -o bin/parallel1
+pivoting:
+	cc -Wall -lpthread src/parallel_solver_with_pivoting.c -o bin/parallel_solver_with_pivoting
 
-p2:
-	cc -Wall -lpthread src/parallel2.c -o bin/parallel2
-
-p3:
-	cc -Wall -lpthread src/parallel3.c -o bin/parallel3
+sequential:
+	cc -Wall src/sequential_solver.c -o bin/sequential_solver
 
 alex:
-	cc -Wall -lpthread src/paralex.c -o bin/paralex
-
-serial:
-	cc -Wall src/main.c -o bin/serial_solver
+	cc src/paralex.c -Wall -lpthread  -o bin/paralex
 
 clean:
 	rm -r bin/

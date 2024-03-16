@@ -54,3 +54,26 @@ cd ECE588_Parallel_Matrix
 [Setup Instructions](docs/setup.md)
 
 [Usage Instructions](docs/usage.md)
+
+## Building the Project
+
+The project includes a Makefile for easy compilation of the source code into executable binaries. You can use the following commands to build the project:
+
+- To build all versions of the solver (sequential, parallel, and parallel with pivoting):
+  ```bash
+  make all
+   ```
+- To build specific versions of the solver, use one of the following commands:
+For the sequential version:
+   ```bash
+   make sequential
+   ```
+- For the parallel version without pivoting:
+   ```bash
+   make parallel
+   ```
+- For the parallel version with pivoting:
+   ```bash
+   make pivoting
+   ```
+
