@@ -428,8 +428,6 @@ void freeUpMemory(double*** a, double*** a_duplicate, double*** u, double*** l, 
     free(*p);
 }
 
-
-///////////
 /**
  * Calculates the residual norm to verify the correctness of LU Decomposition.
  *
@@ -474,4 +472,3 @@ double ludecomp_verify(double** P, double** A, double** L, double** U, double** 
     }
     return norm;                    // Return the Frobenius norm as the measure of accuracy
 }
-///////////
