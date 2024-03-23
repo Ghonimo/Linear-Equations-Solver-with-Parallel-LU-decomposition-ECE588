@@ -1,38 +1,43 @@
-# Parallel Equation Solver
+# Parallel Matrix Solver 🚀
 
-This project implements a parallel linear equation solver for large matrices, employing both serial and parallel LU Decomposition algorithms using Pthreads. It explores performance enhancement achieved through multicore execution strategies.
+Welcome to the Parallel Matrix Solver project! This project is designed to solve large systems of linear equations using LU Decomposition, leveraging the power of parallel computing to speed up computations. Perfect for educational purposes and anyone interested in exploring the efficiency of parallel algorithms.
 
-## Project Structure
-```bash
-Parallel Equation Solver
-│
-├── src/                    # Source files
-│   ├── main.c              # Main program entry point
-│   ├── lu_serial.c         # Serial LU Decomposition implementation
-│   ├── lu_serial.h         # Header for serial LU Decomposition
-│   ├── lu_parallel.c       # Parallel LU Decomposition implementation using Pthreads
-│   ├── lu_parallel.h       # Header for parallel LU Decomposition
-│   └── utilities.c         # Utility functions for matrix operations and timing
-│
-├── include/                # Header files
-│   ├── matrix.h            # Definitions and functions for matrix operations
-│   └── timing.h            # Timing and performance measurement utilities
-│
-├── docs/                   # Documentation files
-│   ├── setup.md            # Setup instructions
-│   ├── usage.md            # Usage instructions
-│   └── development.md      # Notes on development decisions and project structure
-│
-├── tests/                  # Test files
-│   ├── test_serial.c       # Tests for serial implementation
-│   └── test_parallel.c     # Tests for parallel implementation
-│
-├── benchmarks/             # Benchmark scripts and results
-│   ├── benchmark_script.sh # Script to run benchmarks
-│   └── results.md          # Benchmark results and analysis
-│
-├── Makefile                # Makefile for building the project
-└── README.md               # Project overview and general instructions
+## Project Directory Structure 📚
+
+Dive into the heart of our Parallel Matrix Solver project. Here's how everything is organized:
+
+### Source Code 🧬
+`src/` - This is where the magic happens! Our source code directory includes both serial and parallel implementations of the LU Decomposition algorithm.
+- `parallel_solver.c`: Embark on a journey with our parallel version, optimized with Pthreads for concurrency.
+- `sequential_solver.c`: The classic approach to LU Decomposition. Perfect for understanding the basics and performance comparison.
+- `...`: Other variations and utilities to explore different implementations of LU Decomposition.
+
+### Headers 📑
+`include/` - All our project-wide declarations live here.
+- `matrix.h`: Essential definitions and function prototypes for matrix operations.
+
+### Documentation 📖
+`docs/` - Need guidance? Our docs have got you covered!
+- `setup.md`: Get up and running with detailed setup instructions.
+- `usage.md`: Learn how to wield our solver with comprehensive usage instructions.
+- `...`: Additional documentation and design logs for our project.
+
+### Benchmarks 📈
+`benchmarks/` - Curious about performance? Check out our benchmarks!
+- `results.md`: Dive into detailed performance analysis and see how our parallel implementation stacks up against the serial one.
+
+### Matrices 🧩
+`matrices/` - Sample matrices for testing and getting a feel of the solver's prowess.
+- `...`: A variety of matrices to challenge and benchmark our solver.
+
+### Solutions 🏁
+`matrices_solution/` - Wondering if you got it right? Here are the solutions for our sample matrices.
+- `...`: Solutions for all provided sample matrices to verify your results.
+
+### Utilities 🔧
+`utilities/` - Our utility belt for benchmarking and matrix generation.
+- `...`: Tools to help you generate matrices, run benchmarks, and more.
+
 ```
 ## Prerequisites
 
